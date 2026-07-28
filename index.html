@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#4DA8DA">
+<title>无明 · 语C工作台</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%234DA8DA'/%3E%3Ctext x='50' y='66' font-size='46' text-anchor='middle' fill='white' font-family='serif'%3E无%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.7.0/style.css">
+<link rel="stylesheet" href="https://fontsapi.zeoseven.com/256/main/result.css">
+<style>
+:root{
+  --sky:#8fb2c9; --sky-deep:#5f8ba8; --sky-light:#e9f1f6; --sky-mist:#f5f9fb;
+  --ink:#2f3e4d; --ink-soft:#68798a; --ink-faint:#9cadbc;
+  --line:#dde9f0; --card:#FFFFFF; --danger:#E08585; --ok:#5CB89A;
+  --radius:14px; --shadow:0 2px 12px rgba(120,150,170,.10);
+  --bar:rgba(255,255,255,.82);
+  --kai:"Kaiti SC","STKaiti","KaiTi","BiauKai","FZKai-Z03S",serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--sky-mist);color:var(--ink);font-size:15px;overflow:hidden}
+button{font-family:inherit;cursor:pointer;border:none;background:none;font-size:14px}
+input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink);outline:none}
+::placeholder{color:var(--ink-faint)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:#C9DFEE;border-radius:3px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ===== 布局 ===== */
+#app{display:flex;height:100%;}
+/* 侧边栏 */
+#sidebar{width:232px;min-width:232px;background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;transition:margin-left .25s ease;z-index:30}
+#sidebar.hidden{margin-left:-232px}
+.brand{padding:22px 20px 14px;display:flex;align-items:center;gap:10px}
+.brand .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--sky),var(--sky-deep));color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-family:serif;flex-shrink:0}
+.brand .name{font-size:17px;font-weight:600;letter-spacing:2px}
+.brand .sub{font-size:11px;color:var(--ink-faint);letter-spacing:1px}
+#navList{flex:1;overflow-y:auto;padding:6px 12px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:var(--ink-soft);margin-bottom:2px;cursor:pointer;position:relative;user-select:none}
+.nav-item:hover{background:var(--sky-mist)}
+.nav-item.active{background:var(--sky-light);color:var(--sky-deep);font-weight:600}
+.nav-item .ico{width:18px;text-align:center;font-size:15px}
+.nav-item .del{margin-left:auto;color:var(--ink-faint);font-size:12px;opacity:0;padding:2px 5px;border-radius:6px}
+.nav-item:hover .del{opacity:1}
+.nav-item .del:hover{color:var(--danger);background:#FBEEEE}
+.nav-sec{font-size:11px;color:var(--ink-faint);padding:14px 12px 6px;letter-spacing:1px}
+.add-nav{margin:8px 12px 14px;padding:9px;border:1px dashed var(--line);border-radius:10px;color:var(--ink-faint);text-align:center;font-size:13px}
+.add-nav:hover{color:var(--sky-deep);border-color:var(--sky)}
+/* 侧栏底部 同步区 */
+#syncBox{border-top:1px solid var(--line);padding:12px 16px}
+.sync-line{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft)}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot.on{background:var(--ok);box-shadow:0 0 0 0 rgba(92,184,154,.5);animation:pulse 2s infinite}
+.dot.off{background:#C4CFD9}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(92,184,154,.45)}70%{box-shadow:0 0 0 7px rgba(92,184,154,0)}100%{box-shadow:0 0 0 0 rgba(92,184,154,0)}}
+.sync-btns{display:flex;gap:8px;margin-top:10px}
+.sync-btns button{flex:1;padding:6px 0;font-size:12px;border:1px solid var(--line);border-radius:8px;color:var(--ink-soft);background:var(--sky-mist)}
+.sync-btns button:hover{color:var(--sky-deep);border-color:var(--sky)}
+#saveHint{font-size:11px;color:var(--ink-faint);margin-top:8px;text-align:center}
+
+/* 主区 */
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#topbar{height:54px;display:flex;align-items:center;gap:12px;padding:0 18px;background:var(--bar);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);flex-shrink:0}
+#menuBtn{width:34px;height:34px;border-radius:9px;color:var(--ink-soft);font-size:17px}
+#menuBtn:hover{background:var(--sky-light);color:var(--sky-deep)}
+#pageTitle{font-size:16px;font-weight:600;letter-spacing:.5px}
+#topStatus{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-soft);background:var(--sky-mist);border:1px solid var(--line);padding:5px 12px;border-radius:20px}
+#content{flex:1;overflow-y:auto;padding:22px;-webkit-overflow-scrolling:touch}
+.wrap{max-width:860px;margin:0 auto}
+
+/* ===== 通用组件 ===== */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.tab{padding:8px 20px;border-radius:20px;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);font-size:14px}
+.tab.active{background:var(--sky);color:#fff;border-color:var(--sky);font-weight:600}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.chip{padding:5px 14px;border-radius:16px;font-size:13px;background:var(--sky-mist);border:1px solid var(--line);color:var(--ink-soft)}
+.chip.active{background:var(--sky-light);border-color:var(--sky);color:var(--sky-deep);font-weight:600}
+.chip b{font-weight:600;margin-left:4px;font-size:12px}
+.input-row{display:flex;gap:10px}
+.input-row textarea{flex:1;border:1px solid var(--line);border-radius:12px;padding:12px 14px;resize:none;background:var(--sky-mist);line-height:1.7;min-height:52px;transition:border .2s}
+.input-row textarea:focus{border-color:var(--sky);background:#fff}
+.btn{padding:0 22px;border-radius:12px;background:var(--sky);color:#fff;font-weight:600;flex-shrink:0;transition:opacity .15s}
+.btn:hover{opacity:.88}
+.btn.ghost{background:var(--sky-mist);color:var(--sky-deep);border:1px solid var(--line)}
+.btn.sm{padding:7px 16px;border-radius:9px;font-size:13px}
+.item-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;animation:fadein .25s;transition:box-shadow .15s,border-color .15s}
+.item-card:hover{box-shadow:0 4px 14px rgba(120,150,170,.14);border-color:var(--sky)}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.item-card .txt{flex:1;line-height:1.75;word-break:break-all;white-space:pre-wrap}
+.item-card .meta{display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0}
+.badge{font-size:11.5px;padding:3px 10px;border-radius:12px;background:var(--sky-light);color:var(--sky-deep);border:none;cursor:pointer}
+.time{font-size:11px;color:var(--ink-faint)}
+.icon-btn{color:var(--ink-faint);font-size:13px;padding:3px 6px;border-radius:6px}
+.icon-btn:hover{color:var(--danger);background:#FBEEEE}
+.empty{text-align:center;color:var(--ink-faint);padding:46px 0;font-size:13.5px;line-height:2}
+.empty .big{font-size:30px;opacity:.5}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.folder{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;cursor:pointer;position:relative;transition:transform .15s,box-shadow .15s}
+.folder:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(77,168,218,.14);border-color:var(--sky)}
+.folder .f-ico{font-size:24px;margin-bottom:10px}
+.folder .f-name{font-weight:600;font-size:15px}
+.folder .f-count{font-size:12px;color:var(--ink-faint);margin-top:4px}
+.folder .del{position:absolute;top:10px;right:10px;opacity:0}
+.folder:hover .del{opacity:1}
+.crumb{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-faint);margin-bottom:16px;flex-wrap:wrap}
+.crumb a{color:var(--sky-deep);cursor:pointer;text-decoration:none}
+.crumb a:hover{text-decoration:underline}
+.note-title{width:100%;border:none;font-size:16px;font-weight:600;margin-bottom:8px;background:transparent}
+.note-body{width:100%;border:none;background:transparent;resize:none;line-height:1.9;min-height:120px;font-size:14.5px}
+.section-h{display:flex;align-items:center;justify-content:space-between;margin:4px 0 14px}
+.section-h h3{font-size:15px;font-weight:600;letter-spacing:.5px}
+.hint{font-size:12px;color:var(--ink-faint);line-height:1.8}
+.tag{display:inline-block;font-size:11.5px;padding:2px 10px;border-radius:10px;background:var(--sky-light);color:var(--sky-deep);margin:2px 4px 2px 0}
+.tag .x{margin-left:4px;cursor:pointer;opacity:.6}
+.tag .x:hover{opacity:1;color:var(--danger)}
+/* 时间线 */
+.tl-group{margin-bottom:22px}
+.tl-era{font-size:13px;font-weight:600;color:var(--sky-deep);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.tl-era::after{content:"";flex:1;height:1px;background:var(--line)}
+.tl-item{display:flex;gap:14px;padding:0 0 18px 0;position:relative}
+.tl-item::before{content:"";position:absolute;left:5px;top:16px;bottom:0;width:1.5px;background:var(--line)}
+.tl-item:last-child::before{display:none}
+.tl-dot{width:11px;height:11px;border-radius:50%;background:var(--card);border:3px solid var(--sky);margin-top:4px;flex-shrink:0;z-index:1}
+.tl-body{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 15px}
+.tl-date{font-size:13px;font-weight:600;color:var(--sky-deep)}
+.tl-people{font-size:12px;color:var(--ink-soft);margin:4px 0}
+.tl-event{line-height:1.7;font-size:14px}
+/* 关系 */
+.rel-center{text-align:center;margin-bottom:20px}
+.rel-center .core{display:inline-flex;align-items:center;justify-content:center;min-width:74px;height:74px;padding:0 14px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--sky-deep));color:#fff;font-weight:600;font-size:16px;box-shadow:0 6px 16px rgba(77,168,218,.35)}
+.rel-card{display:flex;gap:12px;align-items:flex-start}
+.rel-avatar{width:42px;height:42px;border-radius:50%;background:var(--sky-light);color:var(--sky-deep);display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0;font-size:15px}
+/* 弹窗 */
+#mask{position:fixed;inset:0;background:rgba(44,62,80,.35);display:none;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(2px)}
+#mask.show{display:flex}
+#dialog{background:var(--card);border-radius:18px;padding:24px;width:min(430px,90vw);max-height:84vh;overflow-y:auto;animation:pop .2s}
+@keyframes pop{from{transform:scale(.95);opacity:0}to{transform:none;opacity:1}}
+#dialog h3{font-size:16px;margin-bottom:16px}
+#dialog .field{margin-bottom:14px}
+#dialog label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+#dialog input[type=text],#dialog textarea,#dialog select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--sky-mist)}
+#dialog input:focus,#dialog textarea:focus{border-color:var(--sky);background:#fff}
+#dialog .acts{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+#dialog.wide{width:min(640px,94vw)}
+/* OCR */
+.ocr-zone{border:1.5px dashed var(--line);border-radius:12px;padding:13px;text-align:center;color:var(--ink-soft);font-size:13px;margin-top:12px;cursor:pointer;background:var(--sky-mist);transition:all .2s;line-height:1.7}
+.ocr-zone:hover,.ocr-zone.drag{border-color:var(--sky);color:var(--sky-deep);background:var(--sky-light)}
+.ocr-status{font-size:12.5px;color:var(--sky-deep);margin-top:10px;text-align:center}
+.ocr-row{display:flex;gap:8px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+.ocr-row textarea{flex:1;border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--sky-mist);line-height:1.6;resize:none;min-height:34px}
+.ocr-row textarea:focus{border-color:var(--sky);background:#fff}
+.ocr-row select{border:1px solid var(--line);border-radius:8px;padding:6px 4px;background:#fff;font-size:12.5px;color:var(--ink)}
+.prog{height:5px;background:var(--sky-light);border-radius:3px;overflow:hidden;margin-top:12px}
+.prog i{display:block;height:100%;background:var(--sky);width:0;transition:width .25s}
+/* toast */
+#toast{position:fixed;top:66px;left:50%;transform:translateX(-50%) translateY(-8px);background:var(--ink);color:var(--card);padding:9px 20px;border-radius:22px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:200}
+#toast.show{opacity:.94;transform:translateX(-50%)}
+/* ===== 古风韵味 ===== */
+.brand .name,#pageTitle,.tab,.f-name,.section-h h3,#dialog h3,.tl-era,.rel-center .core,.empty,.nav-item,.nav-sec,.note-title,.crumb{font-family:var(--kai)}
+.brand .name{font-size:19px;letter-spacing:4px}
+.brand .sub{font-family:var(--kai);letter-spacing:3px}
+#pageTitle{font-size:17px;letter-spacing:2px}
+#pageTitle::before{content:"❖";color:var(--sky);font-size:11px;margin-right:8px;vertical-align:2px}
+.tab{letter-spacing:1px}
+.empty{letter-spacing:1.5px;font-size:14px}
+.section-h h3::before{content:"❖ ";color:var(--sky);font-size:11px}
+.tl-era::before{content:"✦ ";font-size:10px;opacity:.7}
+#content{background:
+  radial-gradient(900px 380px at 92% -8%, var(--sky-light) 0%, transparent 60%),
+  radial-gradient(700px 320px at -8% 108%, var(--sky-light) 0%, transparent 55%)}
+.card{border-top:2px solid var(--sky-light)}
+.folder{border-top:2px solid var(--sky-light)}
+.brand{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:4px}
+/* 可更换图标 */
+.brand .logo{cursor:pointer;overflow:hidden;font-family:var(--kai)}
+.brand .logo img{width:100%;height:100%;object-fit:cover;border-radius:10px}
+.brand .logo:hover{opacity:.85}
+.nav-item .ico{cursor:pointer;border-radius:6px}
+.nav-item .ico:hover{background:var(--sky-light)}
+.nav-item .ico img{width:20px;height:20px;border-radius:6px;object-fit:cover;vertical-align:-5px}
+/* 颜色设置 */
+.sw-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.sw{border:1.5px solid var(--line);border-radius:12px;padding:14px 6px;text-align:center;cursor:pointer;transition:all .15s}
+.sw:hover{transform:translateY(-2px)}
+.sw.cur{border-color:var(--sky);background:var(--sky-light);box-shadow:0 3px 10px rgba(0,0,0,.06)}
+.sw .c{width:36px;height:36px;border-radius:50%;margin:0 auto 9px;border:1px solid rgba(0,0,0,.1)}
+.sw .n{font-size:13px;font-family:var(--kai);letter-spacing:1px}
+/* 角色头像 / 关系头像 */
+.char-ava{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--sky-deep));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:18px;overflow:hidden;cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.char-ava.lg{width:64px;height:64px;font-size:24px}
+.char-ava img,.rel-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.rel-avatar{cursor:pointer;overflow:hidden}
+.char-head{display:flex;align-items:center;gap:14px;padding:2px 2px 14px}
+.char-name{font-size:18px;font-weight:600;letter-spacing:1px;font-family:var(--kai)}
+/* 悬浮收录按钮 */
+.fab{position:fixed;right:26px;bottom:26px;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--sky-deep));color:#fff;font-size:28px;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(60,90,110,.28);z-index:50;transition:transform .15s;font-family:var(--kai)}
+.fab:hover{transform:scale(1.06)}
+.fab:active{transform:scale(.95)}
+@media (max-width:768px){ .fab{right:18px;bottom:18px;width:50px;height:50px} }
+/* 侧边栏 ID / 签名 */
+.brand .name,.brand .sub{cursor:pointer}
+.brand .name:hover,.brand .sub:hover{color:var(--sky-deep)}
+/* 角色模块列表 */
+.module-list{display:flex;flex-direction:column;gap:10px}
+.module-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;cursor:pointer;transition:box-shadow .15s,border-color .15s;display:flex;align-items:center;justify-content:space-between}
+.module-card:hover{box-shadow:0 4px 14px rgba(120,150,170,.14);border-color:var(--sky)}
+.module-card.add{justify-content:center;color:var(--ink-faint);border-style:dashed;background:transparent}
+.module-card .module-name{font-size:15px;font-weight:600;font-family:var(--kai);letter-spacing:1px}
+.module-card .module-hint{font-size:12px;color:var(--ink-faint)}
+.module-hint{font-size:12px;color:var(--ink-faint);font-weight:400}
+/* 词句分类纵向列表 */
+.cat-list{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.cat-row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.cat-row:hover{box-shadow:0 4px 14px rgba(120,150,170,.14);border-color:var(--sky)}
+.cat-name{font-size:15px;font-family:var(--kai);letter-spacing:1px}
+.cat-count{font-size:12px;color:var(--ink-faint);background:var(--sky-mist);padding:2px 10px;border-radius:10px}
+/* 戏录存档 */
+.archive-list{display:flex;flex-direction:column;gap:10px}
+.archive-item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.archive-item:hover{box-shadow:0 4px 14px rgba(120,150,170,.14);border-color:var(--sky)}
+.archive-item .ai-ico{font-size:20px}
+.archive-item .ai-title{flex:1;font-size:15px;font-family:var(--kai);letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.archive-item .ai-count{font-size:12px;color:var(--ink-faint);background:var(--sky-mist);padding:2px 10px;border-radius:10px}
+.archive-item .ai-date{font-size:11px;color:var(--ink-faint)}
+.archive-body{line-height:1.9;white-space:pre-wrap;word-break:break-all}
+/* 字体工具条 */
+.font-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:10px;background:var(--sky-mist);border-radius:10px}
+.font-bar select,.font-bar input[type=color]{border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:#fff;font-size:13px}
+/* 全屏编辑器（人设 / 戏录 / 素材） */
+.editor-layer{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;background:transparent}
+.editor-layer.hidden{display:none}
+.editor-bg{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0;background-color:var(--sky-mist)}
+.editor-top{position:relative;z-index:3;display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bar);border-bottom:1px solid var(--line);flex-shrink:0}
+.editor-top .t-title{font-size:15px;font-weight:600;font-family:var(--kai);letter-spacing:1px;margin-right:auto}
+.editor-bar{position:relative;z-index:3;display:none;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:var(--bar);border-bottom:1px solid var(--line)}
+.editor-bar.show{display:flex}
+.editor-bar label{font-size:12px;color:var(--ink-soft)}
+.editor-bar select,.editor-bar input[type=color]{border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:#fff;font-size:13px}
+.bg-pos{display:flex;align-items:center;gap:8px}
+.pos-grid{display:grid;grid-template-columns:repeat(3,26px);gap:3px}
+.pos-btn{width:26px;height:26px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:12px;color:var(--ink);cursor:pointer}
+.pos-btn.active{background:var(--sky);color:#fff;border-color:var(--sky-deep)}
+.editor-content{position:relative;z-index:2;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:34px 22px 96px;display:flex;flex-direction:column}
+.editor-title{width:100%;border:none;background:transparent;font-size:24px;font-weight:700;font-family:var(--kai);color:var(--ink);margin-bottom:18px;outline:none;text-shadow:0 1px 3px rgba(255,255,255,.65)}
+.editor-body{width:100%;border:none;background:transparent;resize:none;outline:none;line-height:1.95;min-height:62vh;font-size:16px;color:var(--ink);text-shadow:0 1px 3px rgba(255,255,255,.65)}
+.editor-tap{position:relative;z-index:2;font-size:12px;color:var(--ink-faint);text-align:center;margin-top:8px}
+/* 列表图标替代 emoji */
+.ai-ico{width:22px;height:22px;border-radius:50%;background:var(--sky-light);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-ico::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sky)}
+.ai-ico.folder::before{width:10px;height:8px;border-radius:2px;background:transparent;border:2px solid var(--sky)}
+/* 移动端 */
+#dim{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:25;display:none}
+@media (max-width:768px){
+  #sidebar{position:fixed;left:0;top:0;bottom:0;margin-left:-232px}
+  #sidebar.open{margin-left:0}
+  #dim.show{display:block}
+  #content{padding:14px}
+  #topStatus .st-txt{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="logo" id="brandLogo" onclick="editLogo()" title="点击更换图标">无</div>
+      <div>
+        <div class="name" id="brandName" onclick="editBrandText()" title="点击修改 ID">无名</div>
+        <div class="sub" id="brandSub" onclick="editBrandText()" title="点击修改签名">语C工作台</div>
+      </div>
+    </div>
+    <nav id="navList"></nav>
+    <div class="add-nav" onclick="addNavItem()">＋ 添加栏目</div>
+    <div class="add-nav" style="margin-top:-8px" onclick="openTheme()">🎨 颜色设置</div>
+    <div class="add-nav" style="margin-top:-8px" onclick="openFontManager()">字体管理</div>
+    <div id="syncBox">
+      <div class="sync-line"><span class="dot off" id="syncDot"></span><span id="syncTxt">检测中…</span></div>
+      <div class="sync-btns">
+        <button onclick="exportData()">备份导出</button>
+        <button onclick="importData()">导入恢复</button>
+        <button onclick="resetWorkbench()">重置空白</button>
+      </div>
+      <div id="saveHint">数据已自动保存在本机</div>
+    </div>
+  </aside>
+  <div id="dim" onclick="toggleSidebar(false)"></div>
+  <div id="main">
+    <header id="topbar">
+      <button id="menuBtn" onclick="toggleSidebar()">☰</button>
+      <div id="pageTitle">词句积累</div>
+      <div id="topStatus"><span class="dot off" id="topDot"></span><span class="st-txt" id="topTxt">未连接</span></div>
+    </header>
+    <div id="content"><div class="wrap" id="page"></div></div>
+  </div>
+</div>
+
+<div id="mask"><div id="dialog"></div></div>
+<div id="toast"></div>
+<input type="file" id="fileIn" accept=".json" style="display:none">
+<input type="file" id="imgIn" accept="image/*" multiple style="display:none">
+<input type="file" id="icoIn" accept="image/*" style="display:none">
+<input type="file" id="bgIn" accept="image/*" style="display:none">
+
+<div id="editorLayer" class="editor-layer hidden"><div class="editor-bg" id="editorBg"></div><div class="editor-top" id="editorTop"></div><div class="editor-bar" id="editorBar"></div><div class="editor-content" id="editorContent"></div></div>
+
+<script>
+/* ================= 数据层：自动保存 ================= */
+const DB_KEY = 'wuming_data_v1';
+const defaultData = () => ({
+  settings: { theme:'qingshan', logoText:'无', logoImg:'', navIcons:{}, userId:'无名', signature:'语C工作台', customFonts:[] },
+  phraseCats: [],           // 用户自定义词句分类
+  customNavs: [],           // {id,name,icon,items:[{id,type:'folder'|'entry',title,body,parentId,style,bg,bgPos,ts}]}
+  words: [],                // 词汇 {id,text,cat,ts}
+  sentences: [],            // 句段 {id,text,cat,ts}
+  materials: [              // 素材 {id,name,icon,subs:[{id,name,notes:[{id,title,body,ts,style:{fontFamily,fontSize,color,fontWeight},bg,bgPos}]}]}
+    {id:'m1', name:'戏梗', icon:'', subs:[]},
+    {id:'m2', name:'历史', icon:'', subs:[]}
+  ],
+  characters: []            // {id,name,avatar,persona,personaStyle:{fontFamily,fontSize,color,fontWeight},personaBg,personaBgPos,timeline:[...],relations:[...],archive:{items:[{id,type,title,body,parentId,style,bg,bgPos,ts}]},modules:[...]}
+});
+let D = load();
+function load(){
+  try{ const raw = localStorage.getItem(DB_KEY); if(raw){ const d = JSON.parse(raw);
+    const base = defaultData();
+    const merged = Object.assign(base, d);
+    merged.settings = Object.assign({theme:'qingshan',logoText:'无',logoImg:'',navIcons:{},userId:'无名',signature:'语C工作台',customFonts:[]}, d.settings||{});
+    if(!merged.phraseCats) merged.phraseCats=[];
+    (merged.materials||[]).forEach(m=>{
+      m.subs.forEach(s=>{
+        s.notes.forEach(n=>{ if(!n.style) n.style={}; if(n.bg===undefined) n.bg=''; if(n.bgPos===undefined) n.bgPos='center'; });
+      });
+    });
+    (merged.customNavs||[]).forEach(n=>{
+      if(!n.items) n.items=[];
+      if(typeof n.content==='string' && n.content){ n.items.push({id:uid(),type:'entry',title:n.name||'素材',body:n.content,parentId:null,style:{},bg:'',bgPos:'center',ts:Date.now()}); n.content=''; }
+      n.items.forEach(it=>{ if(!it.style) it.style={}; if(it.bg===undefined) it.bg=''; if(it.bgPos===undefined) it.bgPos='center'; });
+    });
+    (merged.characters||[]).forEach(ch=>{
+      if(typeof ch.archive==='string') ch.archive={items:[{id:uid(),type:'entry',title:'旧存档',body:ch.archive||'',parentId:null,style:{},bg:'',bgPos:'center',ts:Date.now()}]};
+      else if(!ch.archive || !ch.archive.items) ch.archive={items:[]};
+      if(!ch.modules) ch.modules=[];
+      ch.modules.forEach(m=>{
+        if(!m.items) m.items=[];
+        if(typeof m.content==='string' && m.content){ m.items.push({id:uid(),type:'entry',title:m.name||'素材',body:m.content,parentId:null,style:{},bg:'',bgPos:'center',ts:Date.now()}); m.content=''; }
+        m.items.forEach(it=>{ if(!it.style) it.style={}; if(it.bg===undefined) it.bg=''; if(it.bgPos===undefined) it.bgPos='center'; });
+      });
+      if(!ch.personaStyle) ch.personaStyle={};
+      if(ch.personaBg===undefined) ch.personaBg='';
+      if(ch.personaBgPos===undefined) ch.personaBgPos='center';
+      (ch.archive.items||[]).forEach(it=>{ if(!it.style) it.style={}; if(it.bg===undefined) it.bg=''; if(it.bgPos===undefined) it.bgPos='center'; });
+    });
+    return merged; } }catch(e){}
+  return defaultData();
+}
+let saveTimer=null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    localStorage.setItem(DB_KEY, JSON.stringify(D));
+    const t=new Date();
+    document.getElementById('saveHint').textContent='已自动保存 '+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0')+':'+String(t.getSeconds()).padStart(2,'0');
+  },300);
+}
+window.addEventListener('beforeunload',()=>{ localStorage.setItem(DB_KEY, JSON.stringify(D)); });
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtTs = ts => { const d=new Date(ts); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+
+/* ================= 云端连接状态 ================= */
+function updateOnline(){
+  const on = navigator.onLine;
+  document.getElementById('syncDot').className = 'dot '+(on?'on':'off');
+  document.getElementById('topDot').className = 'dot '+(on?'on':'off');
+  document.getElementById('syncTxt').textContent = on ? '云端已连接 · 可同步' : '未连接 · 仅本地保存';
+  document.getElementById('topTxt').textContent = on ? '云端已连接' : '未连接';
+  document.getElementById('topStatus').style.borderColor = on ? '#BFE3D5' : 'var(--line)';
+}
+window.addEventListener('online',updateOnline);
+window.addEventListener('offline',updateOnline);
+
+/* ================= 备份 / 同步 ================= */
+function exportData(){
+  const blob = new Blob([JSON.stringify(D,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const d = new Date();
+  a.download = `无明备份_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  a.click();
+  toast('备份文件已导出，可传到其他设备导入');
+}
+function importData(){ document.getElementById('fileIn').click(); }
+function resetWorkbench(){
+  confirmDel('将清空本机全部内容、恢复到空白工作台？此操作不可撤销（建议你先点“备份导出”留一份）。',()=>{
+    try{ localStorage.removeItem(DB_KEY); }catch(e){}
+    location.reload();
+  });
+}
+document.getElementById('fileIn').addEventListener('change', e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=>{ try{
+      const d = JSON.parse(r.result);
+      if(!d.materials || !d.words===undefined) throw 0;
+      D = Object.assign(defaultData(), d); save(); render();
+      toast('数据导入成功');
+    }catch(err){ toast('文件格式不正确'); } };
+  r.readAsText(f); e.target.value='';
+});
+
+/* ================= 自动分类引擎 ================= */
+const CATS = ['外貌描写','神态描写','动作描写','语言描写','心理描写','场景描写','其他'];
+const KW = {
+  '外貌描写':['眉','眸','眼睛','双眼','唇','齿','发','鬓','青丝','长发','肤','肌','面容','容颜','容貌','脸','颊','睫','瞳','腰肢','身形','身量','身段','骨相','衣','裙','袍','衫','袖','簪','钗','环佩','妆','钗环','眉目','五官','俊','貌美','清瘦','高挑','纤细','白皙','红唇','杏眼','桃花眼','丹凤眼','柳眉','鸦羽','乌发','霜发','白发','指尖','手指','玉指','锁骨','喉结','疤痕','痣'],
+  '神态描写':['笑','嗔','蹙','皱眉','凝视','睨','瞥','眸光','眼波','神色','面色','脸色','眼神','含笑','浅笑','冷笑','苦笑','莞尔','嫣然','泪','哭','啜泣','哽咽','红了眼','怔','愣','失神','茫然','漠然','冷淡','温柔地看','目光','注视','凝望','挑眉','眯眼','垂眸','抬眸','眼底','神情','表情','面无表情','绯红','红晕','苍白'],
+  '动作描写':['走','跑','奔','跳','提','拿','执','握','拂','挥','抬','俯身','跪','起身','转身','掀','推','拉','掷','抚','牵','拢','踏','掠','拭','叩','斟','捧','接过','递','扶','搂','抱','拥','退后','上前','伸手','收回','摆手','点头','摇头','屈膝','行礼','作揖','拔剑','挽弓','策马','翻身','躬身','踱步','疾步','驻足','抚摸','攥','捏','拽','甩','劈','斩','刺','挡','闪身','侧身','拾起','放下','摔','踢','扑'],
+  '语言描写':['道：','说道','曰','开口','问道','答道','唤','低语','呢喃','轻语','冷声','轻声','喝道','嗓音','声线','语气','嗓子','话音','言语','嗓','应声','回话','嘟囔','嘀咕','喊','唤道','沉声','嘶哑','清冷的声音','出声'],
+  '心理描写':['心中','心底','心里','思绪','念头','回忆','忆起','恍惚','踌躇','犹豫','惶','惧','慌','怯','悸','怅','郁结','恨意','爱意','愧','暗想','暗道','忖','思量','揣测','疑惑','不安','忐忑','纠结','挣扎','释然','怅然','怆然','酸涩','苦涩','欢喜','窃喜','失落','空落','悲从中来','五味杂陈','心如刀绞','心头一紧','心跳'],
+  '场景描写':['风','雨','雪','月','日光','晨光','暮色','云','山','水','江','河','湖','海','花','树','柳','竹','烛','灯','殿','宫','廊','窗','檐','庭','院','夜','晨','暮','黄昏','霜','雾','楼','亭','池','阶','帘','屏风','案','榻','香炉','薰香','街市','长街','巷','城','郊','原野','天际','星','银河','灯火','红墙','琉璃','宫灯','更漏','蝉鸣','鸟','桂','梅','兰','荷','枫','落叶','春','夏','秋','冬','雪落','细雨','骤雨','晚风','长夜']
+};
+function classify(text){
+  let best='其他', bestScore=0;
+  for(const cat of CATS){
+    if(cat==='其他') continue;
+    let s=0;
+    for(const k of KW[cat]){
+      let idx=0;
+      while((idx=text.indexOf(k,idx))!==-1){ s+=k.length>1?2:1; idx+=k.length; }
+    }
+    if(s>bestScore){ bestScore=s; best=cat; }
+  }
+  return best;
+}
+function allCats(){ return CATS.concat(D.phraseCats||[]); }
+
+/* ================= 中文日期解析（时间线） ================= */
+const CN_NUM = {'零':0,'〇':0,'一':1,'元':1,'二':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'正':1,'冬':11,'腊':12,'初':0,'廿':20,'卅':30};
+function cn2n(s){
+  if(!s) return 0;
+  s = s.trim();
+  if(/^\d+$/.test(s)) return parseInt(s);
+  let n=0, tmp=0;
+  for(const ch of s){
+    if(ch==='十'){ tmp = tmp===0 ? 10 : tmp*10; }
+    else if(ch==='百'){ tmp = (tmp===0?1:tmp)*100; n+=tmp; tmp=0; }
+    else if(CN_NUM[ch]!==undefined){
+      if(ch==='廿'){ tmp+=20; } else if(ch==='卅'){ tmp+=30; }
+      else if(tmp>=10){ n+=tmp; tmp=CN_NUM[ch]; if(tmp<10&&tmp>0){n+=tmp;tmp=0;} else {n+=tmp;tmp=0;} }
+      else tmp+=CN_NUM[ch];
+    }
+  }
+  return n+tmp;
+}
+function parseCnDate(str){
+  str = (str||'').trim();
+  const re = /^(.*?)([元一二两三四五六七八九十百零〇\d]+)\s*年(?:\s*([正冬腊一二两三四五六七八九十\d]+)\s*月)?(?:\s*([初廿卅一二两三四五六七八九十\d]+)\s*[日号]?)?/;
+  const m = str.match(re);
+  if(m){
+    return { era:(m[1]||'').trim()||'未纪年', y:cn2n(m[2]), m:m[3]?cn2n(m[3]):0, d:m[4]?cn2n(m[4]):0, ok:true };
+  }
+  return { era:'未注明日期', y:0, m:0, d:0, ok:false };
+}
+
+/* ================= 主题（颜色设置） ================= */
+const THEMES = {
+  qingshan:{name:'晴山蓝',swatch:'#8fb2c9',vars:{'--sky':'#8fb2c9','--sky-deep':'#5f8ba8','--sky-light':'#e9f1f6','--sky-mist':'#f5f9fb','--line':'#dde9f0','--card':'#ffffff','--ink':'#2f3e4d','--ink-soft':'#68798a','--ink-faint':'#9cadbc','--bar':'rgba(255,255,255,.82)','--shadow':'0 2px 12px rgba(120,150,170,.10)'}},
+  dingxiang:{name:'丁香紫',swatch:'#c1a1ca',vars:{'--sky':'#c1a1ca','--sky-deep':'#966fa3','--sky-light':'#f3ecf5','--sky-mist':'#faf7fb','--line':'#eadfee','--card':'#ffffff','--ink':'#3d3444','--ink-soft':'#77687e','--ink-faint':'#a898ae','--bar':'rgba(255,255,255,.82)','--shadow':'0 2px 12px rgba(160,130,170,.10)'}},
+  shuilongyin:{name:'水龙吟',swatch:'#84a729',vars:{'--sky':'#84a729','--sky-deep':'#647f1f','--sky-light':'#eef3da','--sky-mist':'#f8faf0','--line':'#e3ead0','--card':'#ffffff','--ink':'#333d22','--ink-soft':'#6e7a58','--ink-faint':'#9aa587','--bar':'rgba(255,255,255,.82)','--shadow':'0 2px 12px rgba(130,150,80,.10)'}},
+  shiliu:{name:'石榴裙',swatch:'#b13b2e',vars:{'--sky':'#b13b2e','--sky-deep':'#8c2d23','--sky-light':'#f7e9e7','--sky-mist':'#fbf5f4','--line':'#eedcd9','--card':'#ffffff','--ink':'#40302d','--ink-soft':'#7d6a66','--ink-faint':'#ab9793','--bar':'rgba(255,255,255,.82)','--shadow':'0 2px 12px rgba(170,90,80,.10)'}},
+  yunshan:{name:'云杉绿',swatch:'#15231b',vars:{'--sky':'#4d7a5e','--sky-deep':'#7fac91','--sky-light':'#24382c','--sky-mist':'#101b14','--line':'#2a3d31','--card':'#18281e','--ink':'#e3ece5','--ink-soft':'#a7bcae','--ink-faint':'#6f8577','--bar':'rgba(21,35,27,.85)','--shadow':'0 2px 12px rgba(0,0,0,.35)'}},
+  hanbaiyu:{name:'汉白玉',swatch:'#f8f4ed',vars:{'--sky':'#b0997a','--sky-deep':'#8a7355','--sky-light':'#f1e9dc','--sky-mist':'#f8f4ed','--line':'#e8dfd1','--card':'#fffdf8','--ink':'#42392e','--ink-soft':'#7d7264','--ink-faint':'#ab9f8d','--bar':'rgba(255,253,248,.82)','--shadow':'0 2px 12px rgba(160,140,110,.12)'}}
+};
+function applyTheme(key){
+  const t = THEMES[key] || THEMES.qingshan;
+  for(const k in t.vars) document.documentElement.style.setProperty(k, t.vars[k]);
+  const meta=document.querySelector('meta[name=theme-color]'); if(meta) meta.content=t.vars['--sky'];
+}
+function openTheme(){
+  const cur=D.settings.theme;
+  dlg(`<h3>颜色设置</h3>
+  <p class="hint" style="margin-bottom:12px">择一色，染一境。点击即刻生效，自动保存。</p>
+  <div class="sw-grid">${Object.entries(THEMES).map(([k,t])=>`
+    <div class="sw ${k===cur?'cur':''}" onclick="setTheme('${k}')"><div class="c" style="background:${t.swatch}"></div><div class="n">${t.name}</div></div>`).join('')}</div>
+  <div class="acts"><button class="btn sm" onclick="closeDlg()">完成</button></div>`);
+}
+function setTheme(k){ D.settings.theme=k; applyTheme(k); save(); openTheme(); }
+function openFontManager(){
+  const presets=[
+    {name:'汇文明朝体', family:'"Huiwen-mincho","Noto Serif SC",STSong,serif', css:'https://fontsapi.zeoseven.com/256/main/result.css'}
+  ];
+  const custom=(D.settings.customFonts||[]);
+  let list=custom.map((f,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">
+    <div><div style="font-weight:600">${esc(f.name)}</div><div class="hint" style="font-size:12px">${esc(f.family)}</div></div>
+    <button class="icon-btn" onclick="delCustomFont(${i})">删除</button></div>`).join('') || '<div class="hint">暂无自定义字体</div>';
+  dlg(`<h3>字体管理</h3>
+  <p class="hint" style="margin-bottom:12px">添加后，可在戏录 / 素材 / 人设编辑器的字体下拉中找到并使用。</p>
+  <div style="max-height:220px;overflow-y:auto;margin-bottom:12px">${list}</div>
+  <div class="field"><label>字体名称（显示用）</label><input type="text" id="cfName" placeholder="如：我的明朝体"></div>
+  <div class="field"><label>font-family 值</label><input type="text" id="cfFamily" placeholder='如："Huiwen-mincho",serif'></div>
+  <div class="field"><label>CSS 链接（可选，用于网络字体自动加载）</label><input type="text" id="cfCss" placeholder="https://.../result.css"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+    ${presets.map(p=>`<button class="btn sm ghost" onclick="quickAddFont('${esc(p.name)}','${esc(p.family)}','${esc(p.css)}')">＋ ${esc(p.name)}</button>`).join('')}
+  </div>
+  <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button><button class="btn sm" onclick="doAddCustomFont()">添加</button></div>`);
+}
+function quickAddFont(name,family,css){ document.getElementById('cfName').value=name; document.getElementById('cfFamily').value=family; document.getElementById('cfCss').value=css; }
+function doAddCustomFont(){
+  const name=document.getElementById('cfName').value.trim();
+  const family=document.getElementById('cfFamily').value.trim();
+  if(!name||!family) return toast('请填写字体名称和 font-family');
+  if(!D.settings.customFonts) D.settings.customFonts=[];
+  D.settings.customFonts.push({name,family,cssUrl:document.getElementById('cfCss').value.trim()});
+  loadCustomFonts(); save(); closeDlg(); openFontManager();
+}
+function delCustomFont(i){
+  D.settings.customFonts.splice(i,1); save(); openFontManager();
+}
+
+/* ================= 自定义图标 / Logo ================= */
+let pendingIcon=null;
+let pendingEntity=null;
+function fileToIcon(file,size,cb){
+  const img=new Image(); const url=URL.createObjectURL(file);
+  img.onload=()=>{ const c=document.createElement('canvas'); c.width=size; c.height=size;
+    const ctx=c.getContext('2d'); const r=Math.max(size/img.width,size/img.height);
+    const w=img.width*r,h=img.height*r; ctx.drawImage(img,(size-w)/2,(size-h)/2,w,h);
+    cb(c.toDataURL('image/png')); URL.revokeObjectURL(url); };
+  img.onerror=()=>{ toast('图片读取失败'); URL.revokeObjectURL(url); };
+  img.src=url;
+}
+document.getElementById('icoIn').addEventListener('change',e=>{
+  const f=e.target.files[0]; e.target.value='';
+  if(!f) return;
+  if(pendingEntity){
+    const pe=pendingEntity; pendingEntity=null;
+    fileToIcon(f,128,dataUrl=>{
+      if(pe.kind==='char'){ D.characters.find(x=>x.id===pe.cid).avatar=dataUrl; }
+      else { D.characters.find(x=>x.id===pe.cid).relations.find(x=>x.id===pe.rid).avatar=dataUrl; }
+      save(); closeDlg(); render(); toast('头像已更换');
+    });
+    return;
+  }
+  if(!pendingIcon) return;
+  const size = pendingIcon==='__logo' ? 128 : 64;
+  fileToIcon(f,size,dataUrl=>{
+    if(pendingIcon==='__logo'){ D.settings.logoImg=dataUrl; }
+    else { D.settings.navIcons[pendingIcon]={t:'img',v:dataUrl}; }
+    pendingIcon=null; save(); closeDlg(); renderBrand(); render();
+    toast('图标已更换');
+  });
+});
+function pickIconFile(id){ pendingIcon=id; document.getElementById('icoIn').click(); }
+function renderBrand(){
+  const logo=document.getElementById('brandLogo');
+  logo.innerHTML = D.settings.logoImg ? `<img src="${D.settings.logoImg}">` : esc(D.settings.logoText||'无');
+  const name=document.getElementById('brandName'); if(name) name.textContent=D.settings.userId||'无名';
+  const sub=document.getElementById('brandSub'); if(sub) sub.textContent=D.settings.signature||'语C工作台';
+}
+function editBrandText(){
+  dlg(`<h3>修改侧栏信息</h3>
+  <div class="field"><label>ID 名称</label><input type="text" id="bUser" value="${esc(D.settings.userId||'无名')}"></div>
+  <div class="field"><label>签名</label><input type="text" id="bSig" value="${esc(D.settings.signature||'语C工作台')}"></div>
+  <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button><button class="btn sm" onclick="saveBrandText()">保存</button></div>`);
+}
+function saveBrandText(){
+  D.settings.userId=(document.getElementById('bUser').value.trim()||'无名');
+  D.settings.signature=(document.getElementById('bSig').value);
+  save(); closeDlg(); renderBrand();
+}
+function editLogo(){
+  dlg(`<h3>更换应用图标</h3>
+  <div class="field"><label>输入一个字 / emoji 作为图标</label><input type="text" id="lgTxt" maxlength="2" value="${esc(D.settings.logoText||'无')}"></div>
+  <div class="field"><label>或使用自己的图片</label><button class="btn sm ghost" onclick="pickIconFile('__logo')">📁 上传图片…</button></div>
+  <div class="acts">
+    <button class="icon-btn" style="margin-right:auto" onclick="resetLogo()">恢复默认</button>
+    <button class="btn sm ghost" onclick="closeDlg()">取消</button>
+    <button class="btn sm" onclick="setLogoTxt()">保存</button></div>`);
+}
+function setLogoTxt(){
+  const v=document.getElementById('lgTxt').value.trim();
+  if(v){ D.settings.logoText=v; D.settings.logoImg=''; }
+  save(); closeDlg(); renderBrand();
+}
+function resetLogo(){ D.settings.logoText='无'; D.settings.logoImg=''; save(); closeDlg(); renderBrand(); }
+function navIcoHtml(id,fallback){
+  const ic=D.settings.navIcons[id];
+  const inner = ic ? (ic.t==='img'?`<img src="${ic.v}">`:esc(ic.v)) : fallback;
+  return `<span class="ico" title="点击更换图标" onclick="event.stopPropagation();editNavIcon('${id}')">${inner}</span>`;
+}
+function editNavIcon(id){
+  dlg(`<h3>更换栏目图标</h3>
+  <div class="field"><label>输入 emoji 或单个汉字</label><input type="text" id="icoTxt" maxlength="2" placeholder="如 ✒️ 或 词"></div>
+  <div class="field"><label>或使用自己的图片</label><button class="btn sm ghost" onclick="pickIconFile('${id}')">📁 上传图片…</button></div>
+  <div class="acts">
+    <button class="icon-btn" style="margin-right:auto" onclick="resetNavIcon('${id}')">恢复默认</button>
+    <button class="btn sm ghost" onclick="closeDlg()">取消</button>
+    <button class="btn sm" onclick="setNavIconTxt('${id}')">保存</button></div>`);
+}
+function setNavIconTxt(id){
+  const v=document.getElementById('icoTxt').value.trim();
+  if(v) D.settings.navIcons[id]={t:'emoji',v};
+  save(); closeDlg(); render();
+}
+function resetNavIcon(id){ delete D.settings.navIcons[id]; save(); closeDlg(); render(); }
+/* 角色 / 关系头像 */
+function charAvatarHtml(c){
+  const av=c.avatar;
+  if(av && av.indexOf('data:')===0) return `<img src="${esc(av)}">`;
+  return esc((av && av.indexOf('data:')!==0)?av:(c.name||'?').slice(0,1));
+}
+function relAvatarHtml(r){
+  const av=r.avatar;
+  if(av && av.indexOf('data:')===0) return `<img src="${esc(av)}">`;
+  return esc((av && av.indexOf('data:')!==0)?av:(r.name||'?').slice(0,1));
+}
+function pickEntityImg(kind,cid,rid){ pendingEntity={kind,cid,rid:rid||null}; document.getElementById('icoIn').click(); }
+function editCharAvatar(cid){
+  const c=D.characters.find(x=>x.id===cid);
+  const cur=(c.avatar && c.avatar.indexOf('data:')!==0)?c.avatar:'';
+  dlg(`<h3>更换角色头像</h3>
+  <div class="field"><label>输入一个字 / emoji 作为头像</label><input type="text" id="avTxt" maxlength="2" value="${esc(cur)}"></div>
+  <div class="field"><label>或使用自己的图片</label><button class="btn sm ghost" onclick="pickEntityImg('char','${cid}')">📁 上传图片…</button></div>
+  <div class="acts">
+    <button class="icon-btn" style="margin-right:auto" onclick="resetEntityAvatar('char','${cid}')">恢复默认</button>
+    <button class="btn sm ghost" onclick="closeDlg()">取消</button>
+    <button class="btn sm" onclick="setEntityAvatarTxt('char','${cid}')">保存</button></div>`);
+}
+function editRelAvatar(cid,rid){
+  const r=D.characters.find(x=>x.id===cid).relations.find(x=>x.id===rid);
+  const cur=(r.avatar && r.avatar.indexOf('data:')!==0)?r.avatar:'';
+  dlg(`<h3>更换头像</h3>
+  <div class="field"><label>输入一个字 / emoji 作为头像</label><input type="text" id="avTxt" maxlength="2" value="${esc(cur)}"></div>
+  <div class="field"><label>或使用自己的图片</label><button class="btn sm ghost" onclick="pickEntityImg('rel','${cid}','${rid}')">📁 上传图片…</button></div>
+  <div class="acts">
+    <button class="icon-btn" style="margin-right:auto" onclick="resetEntityAvatar('rel','${cid}','${rid}')">恢复默认</button>
+    <button class="btn sm ghost" onclick="closeDlg()">取消</button>
+    <button class="btn sm" onclick="setEntityAvatarTxt('rel','${cid}','${rid}')">保存</button></div>`);
+}
+function setEntityAvatarTxt(kind,cid,rid){
+  const v=document.getElementById('avTxt').value.trim();
+  applyEntityAvatar(kind,cid,rid,v); closeDlg();
+}
+function resetEntityAvatar(kind,cid,rid){ applyEntityAvatar(kind,cid,rid,''); closeDlg(); }
+function applyEntityAvatar(kind,cid,rid,val){
+  if(kind==='char'){ D.characters.find(x=>x.id===cid).avatar=val; }
+  else { D.characters.find(x=>x.id===cid).relations.find(x=>x.id===rid).avatar=val; }
+  save(); render();
+}
+
+/* ================= 路由 ================= */
+let route = { page:'phrase', sub:null, tab:null, filter:null };
+const BASE_NAVS = [
+  {id:'phrase', name:'词句积累', icon:'✒️'},
+  {id:'material', name:'素材积累', icon:'🗂️'},
+  {id:'role', name:'角色记录', icon:'👤'}
+];
+function go(page, patch={}){
+  route = Object.assign({page, sub:null, tab:null, filter:null}, patch);
+  render();
+  if(window.innerWidth<=768) toggleSidebar(false);
+  document.getElementById('content').scrollTop=0;
+}
+function toggleSidebar(force){
+  const sb=document.getElementById('sidebar'), dim=document.getElementById('dim');
+  const mobile = window.innerWidth<=768;
+  if(mobile){
+    const open = force!==undefined?force:!sb.classList.contains('open');
+    sb.classList.toggle('open',open); dim.classList.toggle('show',open);
+  } else {
+    sb.classList.toggle('hidden', force!==undefined?!force:undefined);
+  }
+}
+
+/* ================= 弹窗 ================= */
+function dlg(html){ document.getElementById('dialog').innerHTML=html; document.getElementById('mask').classList.add('show');
+  setTimeout(()=>{const f=document.querySelector('#dialog input,#dialog textarea'); f&&f.focus();},60); }
+function closeDlg(){ document.getElementById('mask').classList.remove('show'); document.getElementById('dialog').classList.remove('wide'); }
+document.getElementById('mask').addEventListener('click',e=>{ if(e.target.id==='mask') closeDlg(); });
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
+function confirmDel(msg, fn){
+  dlg(`<h3>确认删除</h3><p class="hint" style="font-size:13.5px">${esc(msg)}</p>
+  <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button>
+  <button class="btn sm" style="background:var(--danger)" id="cfBtn">删除</button></div>`);
+  document.getElementById('cfBtn').onclick=()=>{ fn(); closeDlg(); };
+}
+
+/* ================= 侧边栏 ================= */
+function renderNav(){
+  const el=document.getElementById('navList');
+  let h = `<div class="nav-sec">基础栏目</div>`;
+  for(const n of BASE_NAVS){
+    h+=`<div class="nav-item ${route.page===n.id?'active':''}" onclick="go('${n.id}')">${navIcoHtml(n.id,n.icon)}${n.name}</div>`;
+  }
+  if(D.customNavs.length){
+    h+=`<div class="nav-sec">我的栏目</div>`;
+    for(const n of D.customNavs){
+      h+=`<div class="nav-item ${route.page==='custom'&&route.sub===n.id?'active':''}" onclick="go('custom',{sub:'${n.id}'})">
+        ${navIcoHtml(n.id,n.icon||'📌')}${esc(n.name)}
+        <span class="del" onclick="event.stopPropagation();delNav('${n.id}')">✕</span></div>`;
+    }
+  }
+  el.innerHTML=h;
+}
+function addNavItem(){
+  dlg(`<h3>添加栏目</h3>
+  <div class="field"><label>栏目名称</label><input type="text" id="nvName" placeholder="如：灵感随记"></div>
+  <div class="field"><label>图标（可选，一个emoji）</label><input type="text" id="nvIco" placeholder="📌"></div>
+  <div class="acts" style="margin-top:12px">
+    <button class="btn sm ghost" onclick="closeDlg()">取消</button>
+    <button class="btn sm" onclick="doAddNav('folder')">＋ 新建文件夹</button>
+    <button class="btn sm" onclick="doAddNav('note')">＋ 新建素材</button>
+  </div>`);
+}
+function doAddNav(type){
+  const name=document.getElementById('nvName').value.trim();
+  if(!name) return toast('请输入栏目名称');
+  const icon=document.getElementById('nvIco').value.trim()||'📌';
+  const id=uid();
+  const nav={id,name,icon,items:[]};
+  D.customNavs.push(nav); save(); closeDlg();
+  go('custom',{sub:id});
+  if(type==='note') nbEdit(null);
+}
+function delNav(id){
+  const n=D.customNavs.find(x=>x.id===id);
+  confirmDel(`删除栏目「${n.name}」？其中的内容也会一并删除。`,()=>{
+    D.customNavs=D.customNavs.filter(x=>x.id!==id); save();
+    if(route.page==='custom'&&route.sub===id) go('phrase'); else render();
+  });
+}
+
+/* ================= 页面：词句积累 ================= */
+function pagePhrase(){
+  const tab = route.tab||'word';
+  const list = tab==='word'?D.words:D.sentences;
+  const tabName = tab==='word'?'词汇积累':'句段积累';
+  const cats = allCats();
+  if(route.filter){
+    const cat = route.filter;
+    const shown = list.filter(i=>i.cat===cat);
+    let h=`<div class="tabs">
+      <button class="tab ${tab==='word'?'active':''}" onclick="go('phrase',{tab:'word'})">词汇积累</button>
+      <button class="tab ${tab==='sent'?'active':''}" onclick="go('phrase',{tab:'sent'})">句段积累</button>
+    </div>
+    <div class="crumb"><a onclick="go('phrase',{tab:'${tab}'})">${tabName}</a><span>›</span><span>${esc(cat)}</span></div>
+    <div class="section-h"><h3>${esc(cat)}</h3><span class="module-hint">${shown.length} 条</span></div>`;
+    if(!shown.length){
+      h+=`<div class="empty"><div class="big" style="font-family:var(--kai)">〇</div>「${esc(cat)}」一栏尚且空白<br>轻点右下角 ＋ 收录内容吧</div>`;
+    } else {
+      h+= [...shown].reverse().map(i=>`
+      <div class="item-card">
+        <div class="txt">${esc(i.text)}</div>
+        <div class="meta">
+          <button class="badge" onclick="editCat('${tab}','${i.id}')" title="点击修改分类">${i.cat} ▾</button>
+          <span class="time">${fmtTs(i.ts)}</span>
+          <button class="icon-btn" onclick="delPhrase('${tab}','${i.id}')">删除</button>
+        </div>
+      </div>`).join('');
+    }
+    h+=`<button class="fab" onclick="openPhraseInput()" title="收录">＋</button>`;
+    return h;
+  }
+  const counts={}; cats.forEach(c=>counts[c]=0); list.forEach(i=>counts[i.cat]=(counts[i.cat]||0)+1);
+  let h=`<div class="tabs">
+      <button class="tab ${tab==='word'?'active':''}" onclick="go('phrase',{tab:'word'})">词汇积累</button>
+      <button class="tab ${tab==='sent'?'active':''}" onclick="go('phrase',{tab:'sent'})">句段积累</button>
+    </div>
+    <div class="section-h"><h3>${tabName}</h3><button class="btn sm" onclick="addPhraseCat()">＋ 添加分类</button></div>
+    <div class="cat-list">`;
+  for(const c of cats){
+    h+=`<div class="cat-row" onclick="go('phrase',{tab:'${tab}',filter:'${esc(c)}'})">
+      <span class="cat-name">${esc(c)}</span>
+      <span style="display:flex;align-items:center;gap:10px">
+        <span class="cat-count">${counts[c]||0}</span><span style="color:var(--ink-faint)">›</span>
+      </span>
+    </div>`;
+  }
+  h+=`</div><button class="fab" onclick="openPhraseInput()" title="收录">＋</button>`;
+  return h;
+}
+function addPhraseCat(){
+  dlg(`<h3>添加自定义分类</h3>
+  <div class="field"><label>分类名称</label><input type="text" id="pcName" placeholder="如：服饰描写"></div>
+  <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button><button class="btn sm" onclick="doAddPhraseCat()">添加</button></div>`);
+}
+function doAddPhraseCat(){
+  const name=document.getElementById('pcName').value.trim(); if(!name) return toast('请输入分类名称');
+  if(!D.phraseCats) D.phraseCats=[];
+  if(allCats().includes(name)) return toast('该分类已存在');
+  D.phraseCats.push(name); save(); closeDlg(); render();
+  toast('分类已添加');
+}
+function openPhraseInput(){
+  const tab=route.tab||'word';
+  dlg(`<h3>收录${tab==='word'?'词汇':'句段'}</h3>
+  <div class="field"><textarea id="phIn" rows="4" placeholder="${tab==='word'?'输入词汇或短句，自动归类…':'输入句子或段落，自动归类保存…'}"></textarea></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="icon-btn" style="color:var(--sky-deep)" onclick="closeDlg();document.getElementById('imgIn').click()">📷 识别图片</button>
+    <div style="margin-left:auto" class="acts">
+      <button class="btn sm ghost" onclick="closeDlg()">取消</button>
+      <button class="btn sm" onclick="addPhrase()">收录</button>
+    </div>
+  </div>
+  <div class="hint" style="margin-top:8px">归类不准时，收录后点词条上的类别标签即可修改。</div>`);
+  setTimeout(()=>{const t=document.getElementById('phIn'); t&&t.focus();},60);
+}
+function addPhrase(){
+  const el=document.getElementById('phIn');
+  if(!el) return;
+  const text=el.value.trim(); if(!text) return;
+  const tab=route.tab||'word';
+  const cat=classify(text);
+  (tab==='word'?D.words:D.sentences).push({id:uid(),text,cat,ts:Date.now()});
+  save(); render();
+  const open=document.getElementById('mask').classList.contains('show');
+  if(open){ el.value=''; setTimeout(()=>el.focus(),0); }
+  toast(`已自动归入「${cat}」`);
+}
+function delPhrase(tab,id){
+  confirmDel('删除这条内容？',()=>{
+    if(tab==='word') D.words=D.words.filter(i=>i.id!==id);
+    else D.sentences=D.sentences.filter(i=>i.id!==id);
+    save(); render();
+  });
+}
+function editCat(tab,id){
+  const list=tab==='word'?D.words:D.sentences;
+  const item=list.find(i=>i.id===id);
+  dlg(`<h3>修改分类</h3>
+  <div class="field"><label>「${esc(item.text.slice(0,30))}${item.text.length>30?'…':''}」应属于：</label>
+  <select id="catSel">${allCats().map(c=>`<option ${c===item.cat?'selected':''}>${c}</option>`).join('')}</select></div>
+  <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button><button class="btn sm" onclick="doEditCat('${tab}','${id}')">保存</button></div>`);
+}
+function doEditCat(tab,id){
+  const list=tab==='word'?D.words:D.sentences;
+  const item=list.find(i=>i.id===id);
+  item.cat=document.getElementById('catSel').value;
+  save(); closeDlg(); render();
+}
+
+/* ================= 图片识别（OCR）录入 ================= */
+let ocrWorker=null, ocrStatusCb=null, ocrEntries=[];
+function loadTesseract(){
+  return new Promise((res,rej)=>{
+    if(window.Tesseract) return res();
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+    s.onload=res;
+    s.onerror=()=>rej(new Error('识别组件加载失败，请确认已连接网络后重试'));
+    document.head.appendChild(s);
+  });
+}
+async function getOcrWorker(){
+  if(ocrWorker) return ocrWorker;
+  ocrWorker = await Tesseract.createWorker('chi_sim', 1, {
+    logger:m=>{
+      const el=document.getElementById('ocrMsg');
+      if(!el || m.progress===undefined) return;
+      const pct=Math.round(m.progress*100);
+      if(m.status==='recognizing text'){ el.textContent='识别文字中… '+pct+'%'; ocrStatusCb&&ocrStatusCb(m.progress); }
+      else el.textContent='首次使用需加载中文识别包（约15MB，仅一次）… '+(m.status||'')+' '+pct+'%';
+    }
+  });
+  return ocrWorker;
+}
+/* 清洗OCR文本：去CJK间空格、按块智能合并断行 */
+function cleanOcr(text){
+  const rawLines = text.split(/\n/).map(s=>s.replace(/[ \t]+/g,m=>' ').trim())
+    .map(s=>s.replace(/([\u4e00-\u9fa5，。！？；：、「」『』""''（）])\s+(?=[\u4e00-\u9fa5，。！？；：、「」『』""''（）])/g,'$1'));
+  // 按空行分块
+  const blocks=[]; let cur=[];
+  for(const l of rawLines){
+    if(!l){ if(cur.length){blocks.push(cur);cur=[];} continue; }
+    if(/[\u4e00-\u9fa5a-zA-Z0-9]/.test(l)) cur.push(l);
+  }
+  if(cur.length) blocks.push(cur);
+  const out=[];
+  for(const b of blocks){
+    const avg=b.reduce((a,s)=>a+s.length,0)/b.length;
+    if(b.length>1 && avg>14){
+      // 像被折行的段落 → 合并后按句号切分
+      const joined=b.join('');
+      joined.split(/(?<=[。！？])/).map(s=>s.trim()).filter(Boolean).forEach(s=>out.push(s));
+    } else {
+      b.forEach(s=>out.push(s));
+    }
+  }
+  return out.filter(s=>s.length>=1);
+}
+async function handleImages(fileList){
+  const files=[...fileList].filter(f=>f && f.type && f.type.startsWith('image/'));
+  if(!files.length) return toast('未检测到图片文件');
+  ocrEntries=[];
+  const listHtml=files.map((f,i)=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)">
+    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%">🖼 ${esc(f.name||('粘贴图片 '+(i+1)))}</span>
+    <span id="st${i}" style="color:var(--ink-faint);flex-shrink:0">等待中</span></div>`).join('');
+  dlg(`<h3>正在识别 ${files.length} 张图片</h3>${listHtml}
+    <div class="prog"><i id="pbar"></i></div>
+    <div class="ocr-status" id="ocrMsg">正在准备识别组件…</div>`);
+  try{
+    await loadTesseract();
+    const worker=await getOcrWorker();
+    for(let i=0;i<files.length;i++){
+      const st=document.getElementById('st'+i); if(st) st.textContent='识别中…';
+      ocrStatusCb=p=>{ const el=document.getElementById('pbar'); if(el) el.style.width=Math.round(((i+p)/files.length)*100)+'%'; };
+      const {data}=await worker.recognize(files[i]);
+      const lines=cleanOcr(data.text||'');
+      for(const t of lines){
+        ocrEntries.push({text:t, cat:classify(t), target:t.length<=8?'word':'sent'});
+      }
+      const st2=document.getElementById('st'+i); if(st2) st2.textContent='✓ '+lines.length+' 条';
+    }
+    const pb=document.getElementById('pbar'); if(pb) pb.style.width='100%';
+    showOcrReview();
+  }catch(err){
+    dlg(`<h3>识别失败</h3><p class="hint" style="font-size:13.5px">${esc(err.message||'发生未知错误')}<br><br>提示：图片识别功能需要联网（首次使用会下载中文识别包）。</p>
+    <div class="acts"><button class="btn sm" onclick="closeDlg()">好的</button></div>`);
+  }
+}
+function showOcrReview(){
+  if(!ocrEntries.length){
+    dlg(`<h3>识别完成</h3><p class="hint" style="font-size:13.5px">未能从图片中识别出文字。<br>建议：使用清晰的截图、文字尽量水平、避免花哨字体或复杂背景。</p>
+    <div class="acts"><button class="btn sm" onclick="closeDlg()">好的</button></div>`);
+    return;
+  }
+  let h=`<h3>识别结果确认（共 ${ocrEntries.length} 条）</h3>
+  <p class="hint" style="margin-bottom:6px">已自动判断「词汇 / 句段」归属与描写分类。可直接修改文字、调整下拉框，取消勾选则不导入。</p>
+  <div style="display:flex;gap:10px;margin-bottom:4px">
+    <button class="icon-btn" style="color:var(--sky-deep)" onclick="ocrCheckAll(true)">全选</button>
+    <button class="icon-btn" style="color:var(--sky-deep)" onclick="ocrCheckAll(false)">全不选</button>
+  </div>`;
+  h+=ocrEntries.map((e,i)=>`<div class="ocr-row">
+    <input type="checkbox" id="ok${i}" checked style="margin-top:10px;accent-color:var(--sky)">
+    <textarea id="tx${i}" rows="1" oninput="autoGrow(this)">${esc(e.text)}</textarea>
+    <select id="tg${i}"><option value="word" ${e.target==='word'?'selected':''}>词汇</option><option value="sent" ${e.target==='sent'?'selected':''}>句段</option></select>
+    <select id="ct${i}">${allCats().map(c=>`<option ${c===e.cat?'selected':''}>${c}</option>`).join('')}</select>
+  </div>`).join('');
+  h+=`<div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button>
+  <button class="btn sm" onclick="importOcr()">导入所选</button></div>`;
+  dlg(h);
+  document.getElementById('dialog').classList.add('wide');
+  document.querySelectorAll('#dialog textarea').forEach(autoGrow);
+}
+function ocrCheckAll(v){ ocrEntries.forEach((e,i)=>{ const c=document.getElementById('ok'+i); if(c) c.checked=v; }); }
+function importOcr(){
+  let nw=0, ns=0;
+  ocrEntries.forEach((e,i)=>{
+    const ok=document.getElementById('ok'+i); if(!ok||!ok.checked) return;
+    const text=document.getElementById('tx'+i).value.trim(); if(!text) return;
+    const target=document.getElementById('tg'+i).value;
+    const cat=document.getElementById('ct'+i).value;
+    (target==='word'?D.words:D.sentences).push({id:uid(),text,cat,ts:Date.now()});
+    target==='word'?nw++:ns++;
+  });
+  save(); closeDlg(); render();
+  toast(`已导入 ${nw+ns} 条（词汇 ${nw} · 句段 ${ns}），均已完成分类`);
+}
+document.getElementById('imgIn').addEventListener('change',e=>{ handleImages(e.target.files); e.target.value=''; });
+/* 粘贴截图直接识别（词句积累页） */
+document.addEventListener('paste',e=>{
+  if(route.page!=='phrase') return;
+  const imgs=[...(e.clipboardData&&e.clipboardData.items||[])].filter(it=>it.type&&it.type.startsWith('image/'));
+  if(imgs.length){ e.preventDefault(); handleImages(imgs.map(it=>it.getAsFile())); }
+});
+
+/* ================= 页面：素材积累 ================= */
+function pageMaterial(){
+  if(route.sub){
+    const [mid, sid] = route.sub.split('/');
+    const cat = D.materials.find(m=>m.id===mid);
+    if(!cat) { route.sub=null; return pageMaterial(); }
+    if(sid){
+      const sub = cat.subs.find(s=>s.id===sid);
+      if(!sub){ route.sub=mid; return pageMaterial(); }
+      return matNotes(cat,sub);
+    }
+    return matSubs(cat);
+  }
+  let h=`<div class="section-h"><h3>素材分类</h3><button class="btn sm" onclick="addMatCat()">＋ 新建分类</button></div>
+  <div class="grid">`;
+  for(const m of D.materials){
+    const n = m.subs.reduce((a,s)=>a+s.notes.length,0);
+    h+=`<div class="folder" onclick="go('material',{sub:'${m.id}'})">
+      <span class="del icon-btn" onclick="event.stopPropagation();delMatCat('${m.id}')">✕</span>
+      <div class="f-name">${esc(m.name)}</div>
+      <div class="f-count">${m.subs.length} 个子分类 · ${n} 条素材</div></div>`;
+  }
+  h+=`</div>`;
+  if(!D.materials.length) h+=`<div class="empty"><div class="big" style="font-family:var(--kai)">〇</div>暂无分类，点右上角新建</div>`;
+  return h;
+}
+function matSubs(cat){
+  let h=`<div class="crumb"><a onclick="go('material')">素材积累</a><span>›</span><span>${esc(cat.name)}</span></div>
+  <div class="section-h"><h3>${esc(cat.name)} · 子分类</h3><button class="btn sm" onclick="addMatSub('${cat.id}')">＋ 新建子分类</button></div>
+  <div class="grid">`;
+  for(const s of cat.subs){
+    h+=`<div class="folder" onclick="go('material',{sub:'${cat.id}/${s.id}'})">
+      <span class="del icon-btn" onclick="event.stopPropagation();delMatSub('${cat.id}','${s.id}')">✕</span>
+      <div class="f-name">${esc(s.name)}</div>
+      <div class="f-count">${s.notes.length} 条素材</div></div>`;
+  }
+  h+=`</div>`;
+  if(!cat.subs.length) h+=`<div class="empty"><div class="big" style="font-family:var(--kai)">〇</div>还没有子分类<br>点右上角「新建子分类」</div>`;
+  return h;
+}
+function matNotes(cat,sub){
+  let h=`<div class="crumb"><a onclick="go('material')">素材积累</a><span>›</span><a onclick="go('material',{sub:'${cat.id}'})">${esc(cat.name)}</a><span>›</span><span>${esc(sub.name)}</span></div>
+  <div class="section-h"><h3>${esc(sub.name)}</h3><span class="module-hint">${sub.notes.length} 条素材 · 点击标题查看全文</span></div>`;
+  if(!sub.notes.length) h+=`<div class="empty"><div class="big" style="font-family:var(--kai)">〇</div>暂无素材，轻点右下角 ＋ 添加</div>`;
+  else {
+    h+=`<div class="archive-list">`;
+    h+=[...sub.notes].reverse().map(n=>`
+      <div class="archive-item" onclick="openMaterialEditor('${cat.id}','${sub.id}','${n.id}')">
+        <span class="ai-ico"></span>
+        <span class="ai-title">${esc(n.title||'(无标题)')}</span>
+        <span class="ai-date">${fmtTs(n.ts)}</span></div>`).join('');
+    h+=`</div>`;
+  }
+  h+=`<button class="fab" onclick="openMaterialEditor('${cat.id}','${sub.id}',null)" title="添加素材">＋</button>`;
+  return h;
+}
+function openMaterialEditor(mid,sid,nid){
+  const cat=D.materials.find(m=>m.id===mid);
+  const sub=cat.subs.find(s=>s.id===sid);
+  const n=nid?sub.notes.find(x=>x.id===nid):null;
+  openEditor({
+    heading:n?'编辑素材':'新建素材',
+    title:n?n.title:'', body:n?n.body:'', style:n?n.style:{}, bg:n?n.bg:'', bgPos:n?n.bgPos:'center',
+    placeholder:'素材正文…',
+    onSave:({title,body,style,bg,bgPos})=>{
+      if(n){ n.title=title; n.body=body; n.style=style; n.bg=bg; n.bgPos=bgPos; n.ts=Date.now(); }
+      else { sub.notes.push({id:uid(),title,body,ts:Date.now(),style,bg,bgPos}); }
+      save();
+    },
+    onDelete: n ? ()=>delMatNoteAndClose(mid,sid,n.id) : null,
+    onClose:()=>render()
+  });
+}
+function delMatNoteAndClose(mid,sid,nid){
+  const s=D.materials.find(m=>m.id===mid).subs.find(x=>x.id===sid);
+  confirmDel('删除这条素材？',()=>{ s.notes=s.notes.filter(x=>x.id!==nid); save(); editorClose(); render(); toast('已删除'); });
+}
+function autoGrow(el){ el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
+function addMatCat(){
+  dlg(`<h3>新建素材分类</h3>
+  <div class="field"><label>分类名称</label><input type="text" id="mcName" placeholder="如：诗词典故"></div>
+  <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button><button class="btn sm" onclick="doAddMatCat()">创建</button></div>`);
+}
+function doAddMatCat(){
+  const name=document.getElementById('mcName').value.trim(); if(!name) return toast('请输入名称');
+  D.materials.push({id:uid(),name,icon:'',subs:[]});
+  save(); closeDlg(); render();
+}
+function delMatCat(id){
+  const m=D.materials.find(x=>x.id===id);
+  confirmDel(`删除分类「${m.name}」及其全部内容？`,()=>{ D.materials=D.materials.filter(x=>x.id!==id); save(); render(); });
+}
+function addMatSub(mid){
+  dlg(`<h3>新建子分类</h3>
+  <div class="field"><label>子分类名称</label><input type="text" id="msName"></div>
+  <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button><button class="btn sm" onclick="doAddMatSub('${mid}')">创建</button></div>`);
+}
+function doAddMatSub(mid){
+  const name=document.getElementById('msName').value.trim(); if(!name) return toast('请输入名称');
+  D.materials.find(m=>m.id===mid).subs.push({id:uid(),name,notes:[]});
+  save(); closeDlg(); render();
+}
+function delMatSub(mid,sid){
+  const s=D.materials.find(m=>m.id===mid).subs.find(x=>x.id===sid);
+  confirmDel(`删除子分类「${s.name}」及其素材？`,()=>{
+    const m=D.materials.find(m=>m.id===mid);
+    m.subs=m.subs.filter(x=>x.id!==sid); save(); render();
+  });
+}
+
+/* ================= 页面：角色记录 ================= */
+function pageRole(){
+  if(route.sub){
+    const c=D.characters.find(x=>x.id===route.sub);
+    if(!c){ route.sub=null; return pageRole(); }
+    return rolePage(c);
+  }
+  let h=`<div class="section-h"><h3>我的角色</h3><button class="btn sm" onclick="addChar()">＋ 新建角色</button></div><div class="grid">`;
+  for(const c of D.characters){
+    h+=`<div class="folder" onclick="go('role',{sub:'${c.id}'})">
+      <span class="del icon-btn" onclick="event.stopPropagation();delChar('${c.id}')">✕</span>
+      <div class="char-ava" onclick="event.stopPropagation();editCharAvatar('${c.id}')" title="点击更换头像">${charAvatarHtml(c)}</div>
+      <div class="f-name">${esc(c.name)}</div>
+      <div class="f-count">${c.timeline.length} 条时间线 · ${c.relations.length} 位关系人物</div></div>`;
+  }
+  h+=`</div>`;
+  if(!D.characters.length) h+=`<div class="empty"><div class="big">👤</div>戏中人尚未登场<br>点右上角新建角色，比如「祝华予」</div>`;
+  return h;
+}
+function addChar(){
+  dlg(`<h3>新建角色</h3><div class="field"><label>角色名</label><input type="text" id="chName" placeholder="如：祝华予"></div>
+  <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button><button class="btn sm" onclick="doAddChar()">创建</button></div>`);
+}
+function doAddChar(){
+  const name=document.getElementById('chName').value.trim(); if(!name) return toast('请输入角色名');
+  const id=uid();
+  D.characters.push({id,name,avatar:'',persona:'',timeline:[],relations:[],archive:{items:[]},modules:[]});
+  save(); closeDlg(); go('role',{sub:id});
+}
+function delChar(id){
+  const c=D.characters.find(x=>x.id===id);
+  confirmDel(`删除角色「${c.name}」的全部记录？`,()=>{ D.characters=D.characters.filter(x=>x.id!==id); save(); render(); });
+}
+function charHeadHtml(c){
+  return `<div class="char-head"><div class="char-ava lg" onclick="editCharAvatar('${c.id}')" title="点击更换头像">${charAvatarHtml(c)}</div><div><div class="char-name">${esc(c.name)}</div></div></div>`;
+}
+function rolePage(c){
+  if(!route.tab) return charDashboard(c);
+  const tab=route.tab;
+  const crumb=(name)=>`<div class="crumb"><a onclick="go('role')">角色记录</a><span>›</span><a onclick="go('role',{sub:'${c.id}'})">${esc(c.name)}</a><span>›</span><span>${esc(name)}</span></div>`;
+  let h='';
+  if(tab==='persona'){
+    setTimeout(()=>openPersonaEditor(c.id),0);
+    return crumb('人设')+charHeadHtml(c)+`<div class="empty">正在打开全屏人设编辑器…</div>`;
+  } else if(tab==='timeline'){
+    h=crumb('时间线')+charHeadHtml(c)+renderTimeline(c)+`<button class="fab" onclick="openTimelineInput('${c.id}')" title="添加时间线">＋</button>`;
+  } else if(tab==='relation'){
+    h=crumb('人物关系')+charHeadHtml(c)+`<div class="section-h"><h3>关系人物</h3><button class="btn sm" onclick="addRel('${c.id}')">＋ 添加人物</button></div>`;
+    if(!c.relations.length) h+=`<div class="empty"><div class="big">🕸️</div>红尘牵绊，尚未落笔<br>点右上角添加人物，可打标签如「爱慕」「政敌」「主仆」</div>`;
+    h+=c.relations.map(r=>`
+      <div class="card rel-card" style="margin-bottom:12px">
+        <div class="rel-avatar" onclick="editRelAvatar('${c.id}','${r.id}')" title="点击更换头像">${relAvatarHtml(r)}</div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <b>${esc(r.name)}</b>
+            ${r.tags.map((t,i)=>`<span class="tag">${esc(t)}<span class="x" onclick="rmTag('${c.id}','${r.id}',${i})">✕</span></span>`).join('')}
+            <button class="icon-btn" style="color:var(--sky-deep)" onclick="addTag('${c.id}','${r.id}')">＋标签</button>
+          </div>
+          <div class="hint" style="margin-top:6px;color:var(--ink-soft)">${esc(r.desc)||'<span style="color:var(--ink-faint)">（无备注）</span>'}</div>
+        </div>
+        <div class="meta">
+          <button class="icon-btn" style="color:var(--sky-deep)" onclick="editRel('${c.id}','${r.id}')">编辑</button>
+          <button class="icon-btn" onclick="delRel('${c.id}','${r.id}')">删除</button>
+        </div>
+      </div>`).join('');
+  } else if(tab==='archive'){
+    h=renderArchive(c);
+  } else if(tab.startsWith('custom_')){
+    const mid=tab.slice(7); const m=c.modules.find(x=>x.id===mid);
+    if(!m){ go('role',{sub:c.id}); return ''; }
+    setNB({kind:'cm', items:()=>m.items, set:(a)=>{m.items=a;}, save:()=>save()});
+    h=moduleCrumb(c,m)+charHeadHtml(c)+nbRender(esc(m.name))+`<div class="section-h" style="margin-top:14px"><button class="icon-btn" onclick="delCharModule('${c.id}','${m.id}')">删除模块</button></div>`;
+  }
+  return h;
+}
+function charDashboard(c){
+  const archiveCount=(c.archive&&c.archive.items?c.archive.items.filter(x=>x.type==='entry').length:0);
+  const modules=[
+    {key:'persona',name:'人设',hint:c.persona?'已记录':'未落笔'},
+    {key:'timeline',name:'时间线',hint:`${c.timeline.length} 条记录`},
+    {key:'relation',name:'人物关系',hint:`${c.relations.length} 位关系人物`},
+    {key:'archive',name:'戏录存档',hint:`${archiveCount} 篇戏录`},
+    ...(c.modules||[]).map(m=>({key:'custom_'+m.id,name:m.name,hint:'自定义模块'}))
+  ];
+  let h=`<div class="crumb"><a onclick="go('role')">角色记录</a><span>›</span><span>${esc(c.name)}</span></div>`;
+  h+=charHeadHtml(c);
+  h+=`<div class="section-h"><h3>角色模块</h3></div><div class="module-list">`;
+  for(const m of modules){
+    const click = m.key==='persona' ? `openPersonaEditor('${c.id}')` : `go('role',{sub:'${c.id}',tab:'${m.key}'})`;
+    h+=`<div class="module-card" onclick="${click}"><div><div class="module-name">${esc(m.name)}</div><div class="module-hint">${esc(m.hint)}</div></div><span style="color:var(--ink-faint)">›</span></div>`;
+  }
+  h+=`<div class="module-card add" onclick="addCharModule('${c.id}')">＋ 添加模块</div>`;
+  h+=`</div>`;
+  return h;
+}
+function addCharModule(cid){
+  dlg(`<h3>添加自定义模块</h3><div class="field"><label>模块名称</label><input type="text" id="cmName" placeholder="如：灵感碎片"></div>
+  <div class="acts" style="margin-top:12px">
+    <button class="btn sm ghost" onclick="closeDlg()">取消</button>
+    <button class="btn sm" onclick="doAddCharModule('${cid}','folder')">＋ 新建文件夹</button>
+    <button class="btn sm" onclick="doAddCharModule('${cid}','note')">＋ 新建素材</button>
+  </div>`);
+}
+function doAddCharModule(cid,type){
+  const name=document.getElementById('cmName').value.trim(); if(!name) return toast('请输入模块名称');
+  const c=D.characters.find(x=>x.id===cid); const id=uid();
+  const m={id,name,items:[]}; c.modules.push(m); save(); closeDlg();
+  go('role',{sub:cid,tab:'custom_'+id});
+  if(type==='note') nbEdit(null);
+}
+function updCharModule(cid,mid,val){ D.characters.find(x=>x.id===cid).modules.find(x=>x.id===mid).content=val; save(); }
+function delCharModule(cid,mid){
+  const c=D.characters.find(x=>x.id===cid); const m=c.modules.find(x=>x.id===mid);
+  confirmDel(`删除模块「${m.name}」？`,()=>{ c.modules=c.modules.filter(x=>x.id!==mid); save(); go('role',{sub:cid}); });
+}
+function updPersona(cid,val){ D.characters.find(x=>x.id===cid).persona=val; save(); }
+/* 时间线 */
+function addTl(cid){
+  const el=document.getElementById('tlIn');
+  const raw=el.value.trim(); if(!raw) return;
+  const c=D.characters.find(x=>x.id===cid);
+  const lines=raw.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+  let added=0;
+  for(const line of lines){
+    const parts=line.split(/[，,]/).map(s=>s.trim()).filter(Boolean);
+    if(!parts.length) continue;
+    const dateStr=parts[0];
+    const p=parseCnDate(dateStr);
+    let people='', event='';
+    if(parts.length>=3){ people=parts[1]; event=parts.slice(2).join('，'); }
+    else if(parts.length===2){ event=parts[1]; }
+    else { event=line; }
+    c.timeline.push({id:uid(),raw:dateStr,era:p.era,y:p.y,m:p.m,d:p.d,people,event,ts:Date.now()});
+    added++;
+  }
+  save(); closeDlg(); render();
+  toast(`已整理 ${added} 条记录并按时间排序`);
+}
+function openTimelineInput(cid){
+  dlg(`<h3>添加时间线</h3>
+  <div class="field"><label>按格式录入（每行一条）</label><textarea id="tlIn" rows="5" placeholder="熙和二年三月十四日，祝华予&皇帝，祝华予送了花给皇帝"></textarea></div>
+  <div class="hint" style="margin:-2px 0 10px">格式：<b>日期，人物，事件</b>。支持年号纪年，自动按年→月→日排序；可一次粘贴多行批量录入。</div>
+  <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button><button class="btn sm" onclick="addTl('${cid}')">整理收录</button></div>`);
+}
+function renderTimeline(c){
+  if(!c.timeline.length) return `<div class="empty"><div class="big">🕰️</div>长卷未展，故事待续<br>例：熙和元年二月五日，祝华予&皇后，祝华予送了点心给皇后</div>`;
+  const sorted=[...c.timeline].sort((a,b)=> a.era.localeCompare(b.era,'zh') || a.y-b.y || a.m-b.m || a.d-b.d || a.ts-b.ts );
+  const groups={};
+  for(const t of sorted){ (groups[t.era]=groups[t.era]||[]).push(t); }
+  let h='';
+  for(const era in groups){
+    h+=`<div class="tl-group"><div class="tl-era">${esc(era)}</div>`;
+    h+=groups[era].map(t=>`
+      <div class="tl-item"><div class="tl-dot"></div>
+        <div class="tl-body">
+          <div style="display:flex;justify-content:space-between;gap:10px">
+            <span class="tl-date">${esc(t.raw)}</span>
+            <button class="icon-btn" onclick="delTl('${c.id}','${t.id}')">删除</button>
+          </div>
+          ${t.people?`<div class="tl-people">👥 ${esc(t.people)}</div>`:''}
+          <div class="tl-event">${esc(t.event)}</div>
+        </div>
+      </div>`).join('');
+    h+=`</div>`;
+  }
+  return h;
+}
+function delTl(cid,tid){
+  confirmDel('删除这条时间线记录？',()=>{
+    const c=D.characters.find(x=>x.id===cid);
+    c.timeline=c.timeline.filter(t=>t.id!==tid); save(); render();
+  });
+}
+/* 人物关系 */
+function addRel(cid){
+  dlg(`<h3>添加关系人物</h3>
+  <div class="field"><label>人物姓名</label><input type="text" id="rlName" placeholder="如：皇帝"></div>
+  <div class="field"><label>标签（多个用顿号/逗号分隔）</label><input type="text" id="rlTags" placeholder="如：爱慕、君臣"></div>
+  <div class="field"><label>关系备注（可选）</label><textarea id="rlDesc" rows="3" placeholder="两人如何相识、当前关系状态…"></textarea></div>
+  <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button><button class="btn sm" onclick="doAddRel('${cid}')">添加</button></div>`);
+}
+function doAddRel(cid){
+  const name=document.getElementById('rlName').value.trim(); if(!name) return toast('请输入姓名');
+  const tags=document.getElementById('rlTags').value.split(/[、，,\s]+/).map(s=>s.trim()).filter(Boolean);
+  const desc=document.getElementById('rlDesc').value.trim();
+  D.characters.find(x=>x.id===cid).relations.push({id:uid(),name,avatar:'',tags,desc});
+  save(); closeDlg(); render();
+}
+function editRel(cid,rid){
+  const r=D.characters.find(x=>x.id===cid).relations.find(x=>x.id===rid);
+  dlg(`<h3>编辑人物</h3>
+  <div class="field"><label>人物姓名</label><input type="text" id="rlName" value="${esc(r.name)}"></div>
+  <div class="field"><label>关系备注</label><textarea id="rlDesc" rows="3">${esc(r.desc)}</textarea></div>
+  <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button><button class="btn sm" onclick="doEditRel('${cid}','${rid}')">保存</button></div>`);
+}
+function doEditRel(cid,rid){
+  const r=D.characters.find(x=>x.id===cid).relations.find(x=>x.id===rid);
+  r.name=document.getElementById('rlName').value.trim()||r.name;
+  r.desc=document.getElementById('rlDesc').value.trim();
+  save(); closeDlg(); render();
+}
+function delRel(cid,rid){
+  confirmDel('删除这位关系人物？',()=>{
+    const c=D.characters.find(x=>x.id===cid);
+    c.relations=c.relations.filter(x=>x.id!==rid); save(); render();
+  });
+}
+function addTag(cid,rid){
+  dlg(`<h3>添加标签</h3><div class="field"><input type="text" id="tgIn" placeholder="如：青梅竹马"></div>
+  <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button><button class="btn sm" onclick="doAddTag('${cid}','${rid}')">添加</button></div>`);
+}
+function doAddTag(cid,rid){
+  const v=document.getElementById('tgIn').value.trim(); if(!v) return;
+  D.characters.find(x=>x.id===cid).relations.find(x=>x.id===rid).tags.push(v);
+  save(); closeDlg(); render();
+}
+function rmTag(cid,rid,i){
+  D.characters.find(x=>x.id===cid).relations.find(x=>x.id===rid).tags.splice(i,1);
+  save(); render();
+}
+
+/* ================= 全屏编辑器（人设 / 戏录 / 素材） ================= */
+let editorState=null;
+let pendingBgSetter=null;
+function fileToBg(file,max,cb){
+  const img=new Image(); const url=URL.createObjectURL(file);
+  img.onload=()=>{
+    const c=document.createElement('canvas');
+    let w=img.width,h=img.height; const scale=Math.min(1, max/Math.max(w,h));
+    w=Math.round(w*scale); h=Math.round(h*scale);
+    c.width=w; c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h);
+    cb(c.toDataURL('image/jpeg',0.88)); URL.revokeObjectURL(url);
+  };
+  img.onerror=()=>{ toast('图片读取失败'); URL.revokeObjectURL(url); };
+  img.src=url;
+}
+document.getElementById('bgIn').addEventListener('change',e=>{
+  const f=e.target.files[0]; e.target.value='';
+  if(!f||!pendingBgSetter) return;
+  const setter=pendingBgSetter;
+  pendingBgSetter=null;
+  fileToBg(f,1600,url=>{ setter(url); editorSave(); });
+});
+function setEditorBg(url,pos){
+  const el=document.getElementById('editorBg');
+  el.style.backgroundImage = url ? `url(${url})` : 'none';
+  el.style.backgroundPosition = pos || 'center';
+  if(editorState){ editorState.bg=url; if(pos) editorState.bgPos=pos; }
+}
+function pickEditorBg(){ pendingBgSetter=(url)=>setEditorBg(url, editorState.bgPos||'center'); document.getElementById('bgIn').click(); }
+function removeEditorBg(){ setEditorBg('','center'); }
+function bgPosHtml(current){
+  const pos=[
+    ['top left','↖'],['top center','↑'],['top right','↗'],
+    ['center left','←'],['center center','·'],['center right','→'],
+    ['bottom left','↙'],['bottom center','↓'],['bottom right','↘']
+  ];
+  return `<div class="bg-pos"><label>位置</label><div class="pos-grid">${pos.map(([p,l])=>`<button class="pos-btn ${p===current?'active':''}" onclick="setEditorBgPos('${p}')" title="${p}">${l}</button>`).join('')}</div></div>`;
+}
+function setEditorBgPos(p){ setEditorBg(editorState.bg||'',p); editorSave(); }
+function fontSelectHtml(selValue){
+  return getFontOptions().map(f=>`<option value="${esc(f.v)}" ${f.v===selValue?'selected':''}>${esc(f.n)}</option>`).join('');
+}
+function applyEditorStyle(){
+  const title=document.getElementById('editorTitle');
+  const body=document.getElementById('editorBody'); if(!body) return;
+  const family=document.getElementById('editorFont').value;
+  const size=Number(document.getElementById('editorSize').value);
+  const color=document.getElementById('editorColor').value;
+  const weight=document.getElementById('editorWeight').value;
+  [title,body].forEach(el=>{ if(!el) return; el.style.fontFamily=family||'inherit'; el.style.color=color; el.style.fontWeight=weight; });
+  body.style.fontSize=size+'px';
+  if(title) title.style.fontSize=(size+4)+'px';
+  editorSave();
+}
+function openEditor(opts){
+  editorState=opts;
+  const top=document.getElementById('editorTop');
+  const bar=document.getElementById('editorBar');
+  const content=document.getElementById('editorContent');
+  const st=opts.style||{};
+  const bg=opts.bg||'';
+  const bgPos=opts.bgPos||'center';
+  const hideTitle=opts.hideTitle;
+  const titleInput = hideTitle ? '' : `<input type="text" class="editor-title" id="editorTitle" value="${esc(opts.title||'')}" placeholder="大标题" oninput="editorSave()">`;
+  top.innerHTML=`<button class="btn sm ghost" onclick="editorSave(); editorClose();">‹ 返回</button>
+    <span class="t-title">${esc(opts.heading||'编辑')}</span>`;
+  bar.innerHTML=`
+    <label>字体</label><select id="editorFont" onchange="applyEditorStyle()">${fontSelectHtml(st.fontFamily||'')}</select>
+    <label>字号</label><select id="editorSize" onchange="applyEditorStyle()">${[12,14,16,18,20,24,28,32,36].map(s=>`<option value="${s}" ${Number(st.fontSize||15)===s?'selected':''}>${s}</option>`).join('')}</select>
+    <label>颜色</label><input type="color" id="editorColor" value="${st.color||'#2f3e4d'}" oninput="applyEditorStyle()">
+    <label>粗细</label><select id="editorWeight" onchange="applyEditorStyle()"><option value="normal" ${st.fontWeight!=='bold'?'selected':''}>常规</option><option value="bold" ${st.fontWeight==='bold'?'selected':''}>加粗</option></select>
+    ${bgPosHtml(bgPos)}
+    <button class="btn sm ghost" onclick="pickEditorBg()">底图</button>
+    <button class="btn sm ghost" onclick="removeEditorBg()">去底</button>
+    ${opts.onDelete?`<button class="btn sm ghost" style="color:var(--danger)" onclick="editorDelete()">删除</button>`:''}`;
+  content.innerHTML=`${titleInput}<textarea class="editor-body" id="editorBody" placeholder="${esc(opts.placeholder||'在此书写…')}" oninput="editorSave()">${esc(opts.body||'')}</textarea><div class="editor-tap">轻点此处空白处，可显示 / 隐藏 字体与底图设置</div>`;
+  bar.classList.remove('show');                 // 默认隐藏，进入即全屏纯内容
+  setEditorBg(bg,bgPos);
+  content.onclick=(e)=>{ if(e.target.id==='editorBody'||e.target.id==='editorTitle'||e.target.closest('.pos-grid')) return; toggleEditorBar(); };
+  const layer=document.getElementById('editorLayer');
+  layer.classList.remove('hidden');
+  document.body.style.overflow='hidden';
+  setTimeout(()=>{ const b=document.getElementById('editorBody'); if(b){ b.style.fontFamily=st.fontFamily||'inherit'; b.style.fontSize=(st.fontSize||15)+'px'; b.style.color=st.color||'var(--ink)'; b.style.fontWeight=st.fontWeight||'normal'; b.focus(); } },30);
+}
+function toggleEditorBar(){ const bar=document.getElementById('editorBar'); if(bar) bar.classList.toggle('show'); }
+function editorSave(){
+  if(!editorState) return;
+  const title=document.getElementById('editorTitle')?document.getElementById('editorTitle').value.trim():'';
+  const body=document.getElementById('editorBody').value;
+  const style={ fontFamily:document.getElementById('editorFont').value, fontSize:Number(document.getElementById('editorSize').value), color:document.getElementById('editorColor').value, fontWeight:document.getElementById('editorWeight').value };
+  const bg=editorState.bg||'';
+  const bgPos=editorState.bgPos||'center';
+  editorState.onSave({title,body,style,bg,bgPos});
+}
+function editorDelete(){ if(editorState&&editorState.onDelete){ editorState.onDelete(); } }
+function editorClose(){
+  document.getElementById('editorLayer').classList.add('hidden');
+  document.body.style.overflow='';
+  if(editorState&&editorState.onClose){ editorState.onClose(); }
+  else { render(); }
+  editorState=null;
+}
+
+/* 人设全屏编辑器 */
+function openPersonaEditor(cid){
+  const c=D.characters.find(x=>x.id===cid);
+  openEditor({
+    heading:`${c.name} · 人设`, hideTitle:true,
+    body:c.persona, style:c.personaStyle, bg:c.personaBg, bgPos:c.personaBgPos||'center',
+    placeholder:`在这里记录 ${c.name} 的人设：\n\n· 姓名 / 表字 / 称号\n· 年龄 / 生辰\n· 身份背景\n· 性格\n· 外貌特征\n· 经历梗概\n· 习惯与癖好\n· 其他设定…`,
+    onSave:({body,style,bg,bgPos})=>{ c.persona=body; c.personaStyle=style; c.personaBg=bg; c.personaBgPos=bgPos; save(); },
+    onClose:()=>{ go('role',{sub:cid}); }
+  });
+}
+
+/* ================= 戏录存档（文件夹＋多篇戏录＋字体＋底图） ================= */
+const FONT_OPTIONS = [
+  {n:'默认（系统）', v:''},
+  {n:'宋体 · 思源宋体', v:'"Noto Serif SC","Songti SC",STSong,serif'},
+  {n:'黑体 · 思源黑体', v:'"Noto Sans SC","PingFang SC",sans-serif'},
+  {n:'霞鹜文楷', v:'"LXGW WenKai Screen","LXGW WenKai","Kaiti SC",STKaiti,serif'},
+  {n:'汇文明朝体', v:'"Huiwen-mincho","Noto Serif SC",STSong,serif'},
+  {n:'楷体', v:'KaiTi,STKaiti,"Kaiti SC",serif'},
+  {n:'仿宋', v:'FangSong,STFangsong,"FangSong_GB2312",serif'}
+];
+function getFontOptions(){ return FONT_OPTIONS.concat((D.settings.customFonts||[]).map(f=>({n:f.name,v:f.family}))); }
+function loadCustomFonts(){
+  const list=(D.settings.customFonts||[]).filter(f=>f.cssUrl);
+  list.forEach(f=>{
+    const id='cf-'+f.family.replace(/\W/g,'');
+    if(document.getElementById(id)) return;
+    const l=document.createElement('link'); l.id=id; l.rel='stylesheet'; l.href=f.cssUrl;
+    document.head.appendChild(l);
+  });
+}
+function archiveCrumb(c){
+  const parts=[]; let pid=route.filter||null;
+  while(pid){ const f=c.archive.items.find(x=>x.id===pid); if(!f) break; parts.unshift(f); pid=f.parentId; }
+  let h=`<div class="crumb"><a onclick="go('role')">角色记录</a><span>›</span><a onclick="go('role',{sub:'${c.id}'})">${esc(c.name)}</a><span>›</span><a onclick="go('role',{sub:'${c.id}',tab:'archive'})">戏录存档</a>`;
+  for(const f of parts){ h+=`<span>›</span><a onclick="go('role',{sub:'${c.id}',tab:'archive',filter:'${f.id}'})">${esc(f.title)}</a>`; }
+  h+=`</div>`;
+  return h;
+}
+function renderArchive(c){
+  const parentId = route.filter||null;
+  const items = (c.archive.items||[]).filter(x=>x.parentId===parentId);
+  const folders = items.filter(x=>x.type==='folder').length;
+  const entries = items.filter(x=>x.type==='entry').length;
+  let h = archiveCrumb(c);
+  h += `<div class="section-h"><h3>戏录存档</h3><span class="module-hint">${folders} 个文件夹 · ${entries} 篇戏录</span></div>`;
+  if(!items.length){
+    h += `<div class="empty"><div class="big" style="font-family:var(--kai)">〇</div>${parentId?'此文件夹尚空':'戏录存档尚空'}<br>轻点右下角 ＋ 新建戏录或文件夹</div>`;
+  } else {
+    h += `<div class="archive-list">`;
+    items.forEach(it=>{
+      if(it.type==='folder'){
+        const n = c.archive.items.filter(x=>x.parentId===it.id).length;
+        h += `<div class="archive-item" onclick="go('role',{sub:'${c.id}',tab:'archive',filter:'${it.id}'})">
+          <span class="ai-ico folder"></span>
+          <span class="ai-title">${esc(it.title)}</span>
+          <span class="ai-count">${n}</span></div>`;
+      } else {
+        h += `<div class="archive-item" onclick="openArchiveEditor('${c.id}','${it.id}')">
+          <span class="ai-ico"></span>
+          <span class="ai-title">${esc(it.title||'(无标题)')}</span>
+          <span class="ai-date">${fmtTs(it.ts)}</span></div>`;
+      }
+    });
+    h += `</div>`;
+  }
+  h += `<button class="fab" onclick="openArchiveMenu('${c.id}')" title="新建">＋</button>`;
+  return h;
+}
+function openArchiveMenu(cid){
+  dlg(`<h3>戏录存档 · 新建</h3>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <button class="btn" onclick="openArchiveEditor('${cid}',null)">新建戏录（大标题＋正文）</button>
+    <button class="btn ghost" onclick="openArchiveFolder('${cid}')">新建文件夹（如：熙和元年）</button>
+  </div>
+  <div class="acts"><button class="btn sm ghost" style="margin-left:auto" onclick="closeDlg()">取消</button></div>`);
+}
+function openArchiveFolder(cid){
+  dlg(`<h3>新建文件夹</h3>
+  <div class="field"><label>文件夹名称</label><input type="text" id="afName" placeholder="如：熙和元年"></div>
+  <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button><button class="btn sm" onclick="doAddArchiveFolder('${cid}')">创建</button></div>`);
+  setTimeout(()=>{const t=document.getElementById('afName'); t&&t.focus();},60);
+}
+function doAddArchiveFolder(cid){
+  const name=document.getElementById('afName').value.trim(); if(!name) return toast('请输入名称');
+  const c=D.characters.find(x=>x.id===cid);
+  c.archive.items.push({id:uid(),type:'folder',title:name,body:'',parentId:route.filter||null,style:{},bg:'',ts:Date.now()});
+  save(); closeDlg(); render();
+}
+function openArchiveEditor(cid, eid){
+  const c=D.characters.find(x=>x.id===cid);
+  const it = eid ? c.archive.items.find(x=>x.id===eid) : null;
+  openEditor({
+    heading:it?'编辑戏录':'新建戏录',
+    title:it?it.title:'', body:it?it.body:'', style:it?it.style:{}, bg:it?it.bg:'', bgPos:it?it.bgPos:'center',
+    placeholder:'戏录正文…',
+    onSave:({title,body,style,bg,bgPos})=>{
+      if(it){ it.title=title; it.body=body; it.style=style; it.bg=bg; it.bgPos=bgPos; it.ts=Date.now(); }
+      else { c.archive.items.push({id:uid(),type:'entry',title,body,parentId:route.filter||null,style,bg,bgPos,ts:Date.now()}); }
+      save();
+    },
+    onDelete: it ? ()=>delArchiveItemAndClose(cid,it.id) : null,
+    onClose:()=>render()
+  });
+}
+function delArchiveItemAndClose(cid,id){
+  const c=D.characters.find(x=>x.id===cid);
+  confirmDel('删除这条内容？若是文件夹，其中的戏录也会一并删除。',()=>{
+    const t=c.archive.items.find(x=>x.id===id);
+    if(t && t.type==='folder'){ c.archive.items=c.archive.items.filter(x=>x.id!==id && x.parentId!==id); }
+    else { c.archive.items=c.archive.items.filter(x=>x.id!==id); }
+    save(); editorClose(); render(); toast('已删除');
+  });
+}
+
+/* ================= 页面：自定义栏目 ================= */
+function pageCustom(){
+  const n=D.customNavs.find(x=>x.id===route.sub);
+  if(!n) return `<div class="empty">栏目不存在</div>`;
+  setNB({kind:'nav', items:()=>n.items, set:(a)=>{n.items=a;}, save:()=>save()});
+  return navCrumb(n)+nbRender(esc(n.name));
+}
+function updCustom(id,val){ D.customNavs.find(x=>x.id===id).content=val; save(); }
+
+/* ================= 通用笔记本（文件夹 / 素材，标题＋正文） ================= */
+let NB=null;
+function setNB(book){ NB=book; }
+function navCrumb(n){
+  const chain=[]; let f=route.filter||null;
+  while(f){ const it=n.items.find(x=>x.id===f); if(!it) break; chain.unshift(it); f=it.parentId; }
+  let h=`<div class="crumb"><a onclick="go('phrase')">无明</a><span>›</span><a onclick="go('custom',{sub:'${n.id}'})">${esc(n.name)}</a>`;
+  for(const it of chain){ h+=`<span>›</span><a onclick="nbOpenFolder('${it.id}')">${esc(it.title)}</a>`; }
+  return h+`</div>`;
+}
+function moduleCrumb(c,m){
+  const chain=[]; let f=route.filter||null;
+  while(f){ const it=m.items.find(x=>x.id===f); if(!it) break; chain.unshift(it); f=it.parentId; }
+  let h=`<div class="crumb"><a onclick="go('role')">角色记录</a><span>›</span><a onclick="go('role',{sub:'${c.id}'})">${esc(c.name)}</a><span>›</span><a onclick="go('role',{sub:'${c.id}',tab:'custom_${m.id}'})">${esc(m.name)}</a>`;
+  for(const it of chain){ h+=`<span>›</span><a onclick="nbOpenFolder('${it.id}')">${esc(it.title)}</a>`; }
+  return h+`</div>`;
+}
+function nbRender(titleList){
+  const book=NB; if(!book) return '';
+  const items=book.items();
+  const parentId=route.filter||null;
+  const list=items.filter(x=>x.parentId===parentId);
+  const folders=list.filter(x=>x.type==='folder').length;
+  const entries=list.filter(x=>x.type==='entry').length;
+  let h=`<div class="section-h"><h3>${titleList}</h3><span class="module-hint">${folders} 个文件夹 · ${entries} 篇</span></div>`;
+  if(!list.length){
+    h+=`<div class="empty"><div class="big">📂</div>${parentId?'此文件夹尚空':'尚空'}<br>轻点右下角 ＋ 新建</div>`;
+  } else {
+    h+=`<div class="archive-list">`;
+    list.forEach(it=>{
+      if(it.type==='folder'){
+        const n=items.filter(x=>x.parentId===it.id).length;
+        h+=`<div class="archive-item" onclick="nbOpenFolder('${it.id}')"><span class="ai-ico folder"></span><span class="ai-title">${esc(it.title)}</span><span class="ai-count">${n}</span></div>`;
+      } else {
+        h+=`<div class="archive-item" onclick="nbEdit('${it.id}')"><span class="ai-ico"></span><span class="ai-title">${esc(it.title||'(无标题)')}</span><span class="ai-date">${fmtTs(it.ts)}</span></div>`;
+      }
+    });
+    h+=`</div>`;
+  }
+  h+=`<button class="fab" onclick="nbMenu()" title="新建">＋</button>`;
+  return h;
+}
+function nbMenu(){
+  const k=NB&&NB.kind==='archive'?'戏录':'素材';
+  dlg(`<h3>新建${k}</h3><div style="display:flex;flex-direction:column;gap:10px">
+    <button class="btn" onclick="nbEdit(null)">＋ 新建${k}（大标题＋正文）</button>
+    <button class="btn ghost" onclick="nbFolder()">＋ 新建文件夹</button>
+  </div><div class="acts"><button class="btn sm ghost" style="margin-left:auto" onclick="closeDlg()">取消</button></div>`);
+}
+function nbEdit(eid){
+  const book=NB; if(!book) return;
+  const items=book.items();
+  const it=eid?items.find(x=>x.id===eid):null;
+  const st=it?it.style:{};
+  const k=book.kind==='archive'?'戏录':'素材';
+  openEditor({
+    heading: it?('编辑'+k):('新建'+k),
+    title: it?it.title:'', body: it?it.body:'', style:st, bg: it?it.bg:'', bgPos: it?it.bgPos:'center',
+    placeholder:'在此书写…',
+    onSave:({title,body,style,bg,bgPos})=>{
+      if(eid){ const x=items.find(y=>y.id===eid); x.title=title; x.body=body; x.style=style; x.bg=bg; x.bgPos=bgPos; x.ts=Date.now(); }
+      else { items.push({id:uid(),type:'entry',title,body,parentId:route.filter||null,style,bg,bgPos,ts:Date.now()}); }
+      book.save();
+    },
+    onDelete: it?()=>{ confirmDel('删除这条内容？若是文件夹，其中内容会一并删除。',()=>{
+      if(it.type==='folder'){ book.set(items.filter(x=>x.id!==it.id && x.parentId!==it.id)); }
+      else { book.set(items.filter(x=>x.id!==it.id)); }
+      book.save(); editorClose(); render();
+    }); }:null,
+    onClose:()=>render()
+  });
+}
+function nbFolder(){
+  dlg(`<h3>新建文件夹</h3><div class="field"><label>文件夹名称</label><input type="text" id="nbFn" placeholder="如：熙和元年"></div>
+  <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button><button class="btn sm" onclick="nbDoFolder()">创建</button></div>`);
+  setTimeout(()=>{const t=document.getElementById('nbFn'); t&&t.focus();},60);
+}
+function nbDoFolder(){
+  const name=document.getElementById('nbFn').value.trim(); if(!name) return toast('请输入名称');
+  const book=NB; const items=book.items();
+  items.push({id:uid(),type:'folder',title:name,body:'',parentId:route.filter||null,style:{},bg:'',ts:Date.now()});
+  book.set(items); book.save(); closeDlg(); render();
+}
+function nbOpenFolder(id){ route.filter=id; render(); }
+
+/* ================= 渲染 ================= */
+function render(){
+  renderNav();
+  const titles={phrase:'词句积累',material:'素材积累',role:'角色记录'};
+  let title=titles[route.page]||'无明';
+  if(route.page==='custom'){ const n=D.customNavs.find(x=>x.id===route.sub); title=n?n.name:'无明'; }
+  document.getElementById('pageTitle').textContent=title;
+  const pg=document.getElementById('page');
+  if(route.page==='phrase') pg.innerHTML=pagePhrase();
+  else if(route.page==='material') pg.innerHTML=pageMaterial();
+  else if(route.page==='role') pg.innerHTML=pageRole();
+  else if(route.page==='custom') pg.innerHTML=pageCustom();
+  document.querySelectorAll('.note-body').forEach(autoGrow);
+}
+/* 回车快捷收录（词句页） */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter' && !e.shiftKey && e.target.id==='phIn'){ e.preventDefault(); addPhrase(); }
+  if(e.key==='Enter' && (e.ctrlKey||e.metaKey) && e.target.id==='tlIn'){ e.preventDefault(); const btn=document.querySelector('#dialog .btn:not(.ghost)'); btn&&btn.click(); }
+});
+applyTheme(D.settings.theme||'qingshan');
+loadCustomFonts();
+renderBrand();
+updateOnline();
+render();
+</script>
+</body>
+</html>
