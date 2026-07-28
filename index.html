@@ -275,9 +275,9 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink);outlin
   #topStatus .st-txt{display:none}
 }
 /* 左滑删除 */
-.swipe{position:relative;overflow:hidden;margin-bottom:10px;background:var(--card);border-radius:var(--radius)}
-.swipe-del{position:absolute;right:0;top:0;bottom:0;width:76px;display:flex;align-items:center;justify-content:center;background:var(--danger);z-index:0}
-.swipe-del-btn{color:#fff;font-size:13px;font-weight:600}
+.swipe{position:relative;overflow:hidden;margin-bottom:10px;background:var(--card);border-radius:var(--radius);isolation:isolate}
+.swipe-del{position:absolute;right:0;top:var(--radius);bottom:var(--radius);width:76px;display:flex;align-items:center;justify-content:center;background:var(--danger);z-index:0;border-radius:0}
+.swipe-del-btn{color:#fff;font-size:13px;font-weight:600;background:transparent;border:none;padding:0}
 .swipe-fore{position:relative;z-index:1;background:var(--card);transition:transform .2s;touch-action:pan-y}
 .swipe-fore > *{margin-bottom:0}
 .archive-list .swipe{margin-bottom:0}
@@ -1262,12 +1262,15 @@ function openTimelineInput(cid){
 function renderTimeline(c){
   if(!c.timeline.length) return `<div class="empty"><div class="big">🕰️</div>长卷未展，故事待续<br>例：熙和元年二月五日，祝华予&皇后，祝华予送了点心给皇后</div>`;
   const sorted=[...c.timeline].sort((a,b)=> a.era.localeCompare(b.era,'zh') || a.y-b.y || a.m-b.m || a.d-b.d || a.ts-b.ts );
-  const groups={};
-  for(const t of sorted){ (groups[t.era]=groups[t.era]||[]).push(t); }
-  let h='';
-  for(const era in groups){
-    h+=`<div class="tl-group"><div class="tl-era">${esc(era)}</div>`;
-    h+=groups[era].map(t=>`
+  let h='', lastKey='';
+  for(const t of sorted){
+    const key = t.y ? `${t.era}${t.y}年${t.m?t.m+'月':''}` : t.era;
+    if(key!==lastKey){
+      if(lastKey) h+=`</div>`;
+      h+=`<div class="tl-group"><div class="tl-era">${esc(key)}</div>`;
+      lastKey=key;
+    }
+    h+=`
       <div class="tl-item" data-swkind="tl" data-swa="${c.id}" data-swb="${t.id}">${selCb('tl', t.id)}<div class="tl-dot"></div>
         <div class="tl-body">
           <div style="display:flex;justify-content:space-between;gap:10px">
@@ -1277,9 +1280,9 @@ function renderTimeline(c){
           ${t.people?`<div class="tl-people">👥 ${esc(t.people)}</div>`:''}
           <div class="tl-event">${esc(t.event)}</div>
         </div>
-      </div>`).join('');
-    h+=`</div>`;
+      </div>`;
   }
+  if(lastKey) h+=`</div>`;
   return h;
 }
 function delTl(cid,tid){
