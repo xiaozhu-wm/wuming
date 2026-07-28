@@ -1,0 +1,26 @@
+{
+  "name": "无明 · 语C工作台",
+  "short_name": "无明",
+  "description": "语C / 语戏角色扮演写作工作台：戏录存档、素材库、笔记本、词句积累、时间线与关系人物。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef6fc",
+  "theme_color": "#4DA8DA",
+  "icons": [
+    {
+      "src": "./icon192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
