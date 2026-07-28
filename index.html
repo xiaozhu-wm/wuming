@@ -264,6 +264,16 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink);outlin
   #content{padding:14px}
   #topStatus .st-txt{display:none}
 }
+/* 右滑删除 */
+.swipe{position:relative;overflow:hidden;margin-bottom:10px}
+.swipe-del{position:absolute;left:0;top:0;bottom:0;width:76px;display:flex;align-items:center;justify-content:center;background:var(--danger);z-index:0}
+.swipe-del-btn{color:#fff;font-size:13px;font-weight:600}
+.swipe-fore{position:relative;z-index:1;background:transparent;transition:transform .2s;touch-action:pan-y}
+.swipe-fore > *{margin-bottom:0}
+.archive-list .swipe{margin-bottom:0}
+.grid .swipe{margin-bottom:0;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);transition:transform .15s,box-shadow .15s}
+.grid .swipe:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(77,168,218,.14);border-color:var(--sky)}
+.grid .swipe .folder{border:none;background:transparent;box-shadow:none;padding:18px}
 </style>
 </head>
 <body>
@@ -272,7 +282,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink);outlin
     <div class="brand">
       <div class="logo" id="brandLogo" onclick="editLogo()" title="点击更换图标">无</div>
       <div>
-        <div class="name" id="brandName" onclick="editBrandText()" title="点击修改 ID">无名</div>
+        <div class="name" id="brandName" onclick="editBrandText()" title="点击修改 ID">无明</div>
         <div class="sub" id="brandSub" onclick="editBrandText()" title="点击修改签名">语C工作台</div>
       </div>
     </div>
@@ -314,7 +324,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink);outlin
 /* ================= 数据层：自动保存 ================= */
 const DB_KEY = 'wuming_data_v1';
 const defaultData = () => ({
-  settings: { theme:'qingshan', logoText:'无', logoImg:'', navIcons:{}, userId:'无名', signature:'语C工作台', customFonts:[] },
+  settings: { theme:'qingshan', logoText:'无', logoImg:'', navIcons:{}, userId:'无明', signature:'语C工作台', customFonts:[] },
   phraseCats: [],           // 用户自定义词句分类
   customNavs: [],           // {id,name,icon,items:[{id,type:'folder'|'entry',title,body,parentId,style,bg,bgPos,ts}]}
   words: [],                // 词汇 {id,text,cat,ts}
@@ -330,7 +340,8 @@ function load(){
   try{ const raw = localStorage.getItem(DB_KEY); if(raw){ const d = JSON.parse(raw);
     const base = defaultData();
     const merged = Object.assign(base, d);
-    merged.settings = Object.assign({theme:'qingshan',logoText:'无',logoImg:'',navIcons:{},userId:'无名',signature:'语C工作台',customFonts:[]}, d.settings||{});
+    merged.settings = Object.assign({theme:'qingshan',logoText:'无',logoImg:'',navIcons:{},userId:'无明',signature:'语C工作台',customFonts:[]}, d.settings||{});
+    if(merged.settings.userId==='无名') merged.settings.userId='无明';
     if(!merged.phraseCats) merged.phraseCats=[];
     (merged.materials||[]).forEach(m=>{
       m.subs.forEach(s=>{
@@ -559,17 +570,17 @@ function pickIconFile(id){ pendingIcon=id; document.getElementById('icoIn').clic
 function renderBrand(){
   const logo=document.getElementById('brandLogo');
   logo.innerHTML = D.settings.logoImg ? `<img src="${D.settings.logoImg}">` : esc(D.settings.logoText||'无');
-  const name=document.getElementById('brandName'); if(name) name.textContent=D.settings.userId||'无名';
+  const name=document.getElementById('brandName'); if(name) name.textContent=D.settings.userId||'无明';
   const sub=document.getElementById('brandSub'); if(sub) sub.textContent=D.settings.signature||'语C工作台';
 }
 function editBrandText(){
   dlg(`<h3>修改侧栏信息</h3>
-  <div class="field"><label>ID 名称</label><input type="text" id="bUser" value="${esc(D.settings.userId||'无名')}"></div>
+  <div class="field"><label>ID 名称</label><input type="text" id="bUser" value="${esc(D.settings.userId||'无明')}"></div>
   <div class="field"><label>签名</label><input type="text" id="bSig" value="${esc(D.settings.signature||'语C工作台')}"></div>
   <div class="acts"><button class="btn sm ghost" onclick="closeDlg()">取消</button><button class="btn sm" onclick="saveBrandText()">保存</button></div>`);
 }
 function saveBrandText(){
-  D.settings.userId=(document.getElementById('bUser').value.trim()||'无名');
+  D.settings.userId=(document.getElementById('bUser').value.trim()||'无明');
   D.settings.signature=(document.getElementById('bSig').value);
   save(); closeDlg(); renderBrand();
 }
@@ -700,7 +711,7 @@ function renderNav(){
   if(D.customNavs.length){
     h+=`<div class="nav-sec">我的栏目</div>`;
     for(const n of D.customNavs){
-      h+=`<div class="nav-item ${route.page==='custom'&&route.sub===n.id?'active':''}" onclick="go('custom',{sub:'${n.id}'})">
+      h+=`<div class="nav-item ${route.page==='custom'&&route.sub===n.id?'active':''}" data-swkind="nav" data-swa="${n.id}" onclick="go('custom',{sub:'${n.id}'})">
         ${navIcoHtml(n.id,n.icon||'📌')}${esc(n.name)}
         <span class="del" onclick="event.stopPropagation();delNav('${n.id}')">✕</span></div>`;
     }
@@ -754,7 +765,7 @@ function pagePhrase(){
       h+=`<div class="empty"><div class="big" style="font-family:var(--kai)">〇</div>「${esc(cat)}」一栏尚且空白<br>轻点右下角 ＋ 收录内容吧</div>`;
     } else {
       h+= [...shown].reverse().map(i=>`
-      <div class="item-card">
+      <div class="item-card" data-swkind="phrase" data-swa="${tab}" data-swb="${i.id}">
         <div class="txt">${esc(i.text)}</div>
         <div class="meta">
           <button class="badge" onclick="editCat('${tab}','${i.id}')" title="点击修改分类">${i.cat} ▾</button>
@@ -986,7 +997,7 @@ function pageMaterial(){
   <div class="grid">`;
   for(const m of D.materials){
     const n = m.subs.reduce((a,s)=>a+s.notes.length,0);
-    h+=`<div class="folder" onclick="go('material',{sub:'${m.id}'})">
+    h+=`<div class="folder" data-swkind="matcat" data-swa="${m.id}" onclick="go('material',{sub:'${m.id}'})">
       <span class="del icon-btn" onclick="event.stopPropagation();delMatCat('${m.id}')">✕</span>
       <div class="f-name">${esc(m.name)}</div>
       <div class="f-count">${m.subs.length} 个子分类 · ${n} 条素材</div></div>`;
@@ -1000,7 +1011,7 @@ function matSubs(cat){
   <div class="section-h"><h3>${esc(cat.name)} · 子分类</h3><button class="btn sm" onclick="addMatSub('${cat.id}')">＋ 新建子分类</button></div>
   <div class="grid">`;
   for(const s of cat.subs){
-    h+=`<div class="folder" onclick="go('material',{sub:'${cat.id}/${s.id}'})">
+    h+=`<div class="folder" data-swkind="matsub" data-swa="${cat.id}" data-swb="${s.id}" onclick="go('material',{sub:'${cat.id}/${s.id}'})">
       <span class="del icon-btn" onclick="event.stopPropagation();delMatSub('${cat.id}','${s.id}')">✕</span>
       <div class="f-name">${esc(s.name)}</div>
       <div class="f-count">${s.notes.length} 条素材</div></div>`;
@@ -1016,7 +1027,7 @@ function matNotes(cat,sub){
   else {
     h+=`<div class="archive-list">`;
     h+=[...sub.notes].reverse().map(n=>`
-      <div class="archive-item" onclick="openMaterialEditor('${cat.id}','${sub.id}','${n.id}')">
+      <div class="archive-item" data-swkind="matnote" data-swa="${cat.id}" data-swb="${sub.id}|${n.id}" onclick="openMaterialEditor('${cat.id}','${sub.id}','${n.id}')">
         <span class="ai-ico"></span>
         <span class="ai-title">${esc(n.title||'(无标题)')}</span>
         <span class="ai-date">${fmtTs(n.ts)}</span></div>`).join('');
@@ -1028,17 +1039,17 @@ function matNotes(cat,sub){
 function openMaterialEditor(mid,sid,nid){
   const cat=D.materials.find(m=>m.id===mid);
   const sub=cat.subs.find(s=>s.id===sid);
-  const n=nid?sub.notes.find(x=>x.id===nid):null;
+  let cur=nid?sub.notes.find(x=>x.id===nid):null;
   openEditor({
-    heading:n?'编辑素材':'新建素材',
-    title:n?n.title:'', body:n?n.body:'', style:n?n.style:{}, bg:n?n.bg:'', bgPos:n?n.bgPos:'center',
+    heading:cur?'编辑素材':'新建素材',
+    title:cur?cur.title:'', body:cur?cur.body:'', style:cur?cur.style:{}, bg:cur?cur.bg:'', bgPos:cur?cur.bgPos:'center',
     placeholder:'素材正文…',
     onSave:({title,body,style,bg,bgPos})=>{
-      if(n){ n.title=title; n.body=body; n.style=style; n.bg=bg; n.bgPos=bgPos; n.ts=Date.now(); }
-      else { sub.notes.push({id:uid(),title,body,ts:Date.now(),style,bg,bgPos}); }
+      if(cur){ cur.title=title; cur.body=body; cur.style=style; cur.bg=bg; cur.bgPos=bgPos; cur.ts=Date.now(); }
+      else { cur={id:uid(),title,body,ts:Date.now(),style,bg,bgPos}; sub.notes.push(cur); }
       save();
     },
-    onDelete: n ? ()=>delMatNoteAndClose(mid,sid,n.id) : null,
+    onDelete: ()=>{ if(!cur){ editorClose(); return; } delMatNoteAndClose(mid,sid,cur.id); },
     onClose:()=>render()
   });
 }
@@ -1088,7 +1099,7 @@ function pageRole(){
   }
   let h=`<div class="section-h"><h3>我的角色</h3><button class="btn sm" onclick="addChar()">＋ 新建角色</button></div><div class="grid">`;
   for(const c of D.characters){
-    h+=`<div class="folder" onclick="go('role',{sub:'${c.id}'})">
+    h+=`<div class="folder" data-swkind="char" data-swa="${c.id}" onclick="go('role',{sub:'${c.id}'})">
       <span class="del icon-btn" onclick="event.stopPropagation();delChar('${c.id}')">✕</span>
       <div class="char-ava" onclick="event.stopPropagation();editCharAvatar('${c.id}')" title="点击更换头像">${charAvatarHtml(c)}</div>
       <div class="f-name">${esc(c.name)}</div>
@@ -1129,7 +1140,7 @@ function rolePage(c){
     h=crumb('人物关系')+charHeadHtml(c)+`<div class="section-h"><h3>关系人物</h3><button class="btn sm" onclick="addRel('${c.id}')">＋ 添加人物</button></div>`;
     if(!c.relations.length) h+=`<div class="empty"><div class="big">🕸️</div>红尘牵绊，尚未落笔<br>点右上角添加人物，可打标签如「爱慕」「政敌」「主仆」</div>`;
     h+=c.relations.map(r=>`
-      <div class="card rel-card" style="margin-bottom:12px">
+      <div class="card rel-card" style="margin-bottom:12px" data-swkind="rel" data-swa="${c.id}" data-swb="${r.id}">
         <div class="rel-avatar" onclick="editRelAvatar('${c.id}','${r.id}')" title="点击更换头像">${relAvatarHtml(r)}</div>
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1232,7 +1243,7 @@ function renderTimeline(c){
   for(const era in groups){
     h+=`<div class="tl-group"><div class="tl-era">${esc(era)}</div>`;
     h+=groups[era].map(t=>`
-      <div class="tl-item"><div class="tl-dot"></div>
+      <div class="tl-item" data-swkind="tl" data-swa="${c.id}" data-swb="${t.id}"><div class="tl-dot"></div>
         <div class="tl-body">
           <div style="display:flex;justify-content:space-between;gap:10px">
             <span class="tl-date">${esc(t.raw)}</span>
@@ -1366,7 +1377,7 @@ function openEditor(opts){
   const hideTitle=opts.hideTitle;
   const titleInput = hideTitle ? '' : `<input type="text" class="editor-title" id="editorTitle" value="${esc(opts.title||'')}" placeholder="大标题" oninput="editorSave()">`;
   top.innerHTML=`<button class="btn sm ghost" onclick="editorSave(); editorClose();">‹ 返回</button>
-    <span class="t-title">${esc(opts.heading||'编辑')}</span>`;
+    <button class="btn sm ghost" id="editorToggle" onclick="toggleEditorBar()">字体 / 底图设置 ▾</button>`;
   bar.innerHTML=`
     <label>字体</label><select id="editorFont" onchange="applyEditorStyle()">${fontSelectHtml(st.fontFamily||'')}</select>
     <label>字号</label><select id="editorSize" onchange="applyEditorStyle()">${[12,14,16,18,20,24,28,32,36].map(s=>`<option value="${s}" ${Number(st.fontSize||15)===s?'selected':''}>${s}</option>`).join('')}</select>
@@ -1375,17 +1386,18 @@ function openEditor(opts){
     ${bgPosHtml(bgPos)}
     <button class="btn sm ghost" onclick="pickEditorBg()">底图</button>
     <button class="btn sm ghost" onclick="removeEditorBg()">去底</button>
+    <button class="btn sm ghost" onclick="exportCurrentImage()">导出图片</button>
+    <button class="btn sm ghost" onclick="exportCurrentFile()">导出文件</button>
     ${opts.onDelete?`<button class="btn sm ghost" style="color:var(--danger)" onclick="editorDelete()">删除</button>`:''}`;
-  content.innerHTML=`${titleInput}<textarea class="editor-body" id="editorBody" placeholder="${esc(opts.placeholder||'在此书写…')}" oninput="editorSave()">${esc(opts.body||'')}</textarea><div class="editor-tap">轻点此处空白处，可显示 / 隐藏 字体与底图设置</div>`;
+  content.innerHTML=`${titleInput}<textarea class="editor-body" id="editorBody" placeholder="${esc(opts.placeholder||'在此书写…')}" oninput="editorSave()">${esc(opts.body||'')}</textarea>`;
   bar.classList.remove('show');                 // 默认隐藏，进入即全屏纯内容
   setEditorBg(bg,bgPos);
-  content.onclick=(e)=>{ if(e.target.id==='editorBody'||e.target.id==='editorTitle'||e.target.closest('.pos-grid')) return; toggleEditorBar(); };
   const layer=document.getElementById('editorLayer');
   layer.classList.remove('hidden');
   document.body.style.overflow='hidden';
   setTimeout(()=>{ const b=document.getElementById('editorBody'); if(b){ b.style.fontFamily=st.fontFamily||'inherit'; b.style.fontSize=(st.fontSize||15)+'px'; b.style.color=st.color||'var(--ink)'; b.style.fontWeight=st.fontWeight||'normal'; b.focus(); } },30);
 }
-function toggleEditorBar(){ const bar=document.getElementById('editorBar'); if(bar) bar.classList.toggle('show'); }
+function toggleEditorBar(){ const bar=document.getElementById('editorBar'); const btn=document.getElementById('editorToggle'); if(bar) bar.classList.toggle('show'); if(btn&&bar) btn.textContent = bar.classList.contains('show')?'字体 / 底图设置 ▴':'字体 / 底图设置 ▾'; }
 function editorSave(){
   if(!editorState) return;
   const title=document.getElementById('editorTitle')?document.getElementById('editorTitle').value.trim():'';
@@ -1458,12 +1470,12 @@ function renderArchive(c){
     items.forEach(it=>{
       if(it.type==='folder'){
         const n = c.archive.items.filter(x=>x.parentId===it.id).length;
-        h += `<div class="archive-item" onclick="go('role',{sub:'${c.id}',tab:'archive',filter:'${it.id}'})">
+        h += `<div class="archive-item" data-swkind="archive" data-swa="${c.id}" data-swb="${it.id}" onclick="go('role',{sub:'${c.id}',tab:'archive',filter:'${it.id}'})">
           <span class="ai-ico folder"></span>
           <span class="ai-title">${esc(it.title)}</span>
           <span class="ai-count">${n}</span></div>`;
       } else {
-        h += `<div class="archive-item" onclick="openArchiveEditor('${c.id}','${it.id}')">
+        h += `<div class="archive-item" data-swkind="archive" data-swa="${c.id}" data-swb="${it.id}" onclick="openArchiveEditor('${c.id}','${it.id}')">
           <span class="ai-ico"></span>
           <span class="ai-title">${esc(it.title||'(无标题)')}</span>
           <span class="ai-date">${fmtTs(it.ts)}</span></div>`;
@@ -1496,17 +1508,17 @@ function doAddArchiveFolder(cid){
 }
 function openArchiveEditor(cid, eid){
   const c=D.characters.find(x=>x.id===cid);
-  const it = eid ? c.archive.items.find(x=>x.id===eid) : null;
+  let cur = eid ? c.archive.items.find(x=>x.id===eid) : null;
   openEditor({
-    heading:it?'编辑戏录':'新建戏录',
-    title:it?it.title:'', body:it?it.body:'', style:it?it.style:{}, bg:it?it.bg:'', bgPos:it?it.bgPos:'center',
+    heading:cur?'编辑戏录':'新建戏录',
+    title:cur?cur.title:'', body:cur?cur.body:'', style:cur?cur.style:{}, bg:cur?cur.bg:'', bgPos:cur?cur.bgPos:'center',
     placeholder:'戏录正文…',
     onSave:({title,body,style,bg,bgPos})=>{
-      if(it){ it.title=title; it.body=body; it.style=style; it.bg=bg; it.bgPos=bgPos; it.ts=Date.now(); }
-      else { c.archive.items.push({id:uid(),type:'entry',title,body,parentId:route.filter||null,style,bg,bgPos,ts:Date.now()}); }
+      if(cur){ cur.title=title; cur.body=body; cur.style=style; cur.bg=bg; cur.bgPos=bgPos; cur.ts=Date.now(); }
+      else { cur={id:uid(),type:'entry',title,body,parentId:route.filter||null,style,bg,bgPos,ts:Date.now()}; c.archive.items.push(cur); }
       save();
     },
-    onDelete: it ? ()=>delArchiveItemAndClose(cid,it.id) : null,
+    onDelete: ()=>{ if(!cur){ editorClose(); return; } delArchiveItemAndClose(cid, cur.id); },
     onClose:()=>render()
   });
 }
@@ -1561,9 +1573,9 @@ function nbRender(titleList){
     list.forEach(it=>{
       if(it.type==='folder'){
         const n=items.filter(x=>x.parentId===it.id).length;
-        h+=`<div class="archive-item" onclick="nbOpenFolder('${it.id}')"><span class="ai-ico folder"></span><span class="ai-title">${esc(it.title)}</span><span class="ai-count">${n}</span></div>`;
+        h+=`<div class="archive-item" data-swkind="nb" data-swa="${it.id}" onclick="nbOpenFolder('${it.id}')"><span class="ai-ico folder"></span><span class="ai-title">${esc(it.title)}</span><span class="ai-count">${n}</span></div>`;
       } else {
-        h+=`<div class="archive-item" onclick="nbEdit('${it.id}')"><span class="ai-ico"></span><span class="ai-title">${esc(it.title||'(无标题)')}</span><span class="ai-date">${fmtTs(it.ts)}</span></div>`;
+        h+=`<div class="archive-item" data-swkind="nb" data-swa="${it.id}" onclick="nbEdit('${it.id}')"><span class="ai-ico"></span><span class="ai-title">${esc(it.title||'(无标题)')}</span><span class="ai-date">${fmtTs(it.ts)}</span></div>`;
       }
     });
     h+=`</div>`;
@@ -1581,23 +1593,23 @@ function nbMenu(){
 function nbEdit(eid){
   const book=NB; if(!book) return;
   const items=book.items();
-  const it=eid?items.find(x=>x.id===eid):null;
-  const st=it?it.style:{};
+  let cur=eid?items.find(x=>x.id===eid):null;
+  const st=cur?cur.style:{};
   const k=book.kind==='archive'?'戏录':'素材';
   openEditor({
-    heading: it?('编辑'+k):('新建'+k),
-    title: it?it.title:'', body: it?it.body:'', style:st, bg: it?it.bg:'', bgPos: it?it.bgPos:'center',
+    heading: cur?('编辑'+k):('新建'+k),
+    title: cur?cur.title:'', body: cur?cur.body:'', style:st, bg: cur?cur.bg:'', bgPos: cur?cur.bgPos:'center',
     placeholder:'在此书写…',
     onSave:({title,body,style,bg,bgPos})=>{
-      if(eid){ const x=items.find(y=>y.id===eid); x.title=title; x.body=body; x.style=style; x.bg=bg; x.bgPos=bgPos; x.ts=Date.now(); }
-      else { items.push({id:uid(),type:'entry',title,body,parentId:route.filter||null,style,bg,bgPos,ts:Date.now()}); }
+      if(cur){ cur.title=title; cur.body=body; cur.style=style; cur.bg=bg; cur.bgPos=bgPos; cur.ts=Date.now(); }
+      else { cur={id:uid(),type:'entry',title,body,parentId:route.filter||null,style,bg,bgPos,ts:Date.now()}; items.push(cur); }
       book.save();
     },
-    onDelete: it?()=>{ confirmDel('删除这条内容？若是文件夹，其中内容会一并删除。',()=>{
-      if(it.type==='folder'){ book.set(items.filter(x=>x.id!==it.id && x.parentId!==it.id)); }
-      else { book.set(items.filter(x=>x.id!==it.id)); }
+    onDelete: ()=>{ if(!cur){ editorClose(); return; } confirmDel('删除这条内容？若是文件夹，其中内容会一并删除。',()=>{
+      if(cur.type==='folder'){ book.set(items.filter(x=>x.id!==cur.id && x.parentId!==cur.id)); }
+      else { book.set(items.filter(x=>x.id!==cur.id)); }
       book.save(); editorClose(); render();
-    }); }:null,
+    }); },
     onClose:()=>render()
   });
 }
@@ -1627,6 +1639,77 @@ function render(){
   else if(route.page==='role') pg.innerHTML=pageRole();
   else if(route.page==='custom') pg.innerHTML=pageCustom();
   document.querySelectorAll('.note-body').forEach(autoGrow);
+  initSwipe();
+}
+/* ================= 右滑删除 ================= */
+function initSwipe(){
+  document.querySelectorAll('[data-swkind]').forEach(el=>{
+    if(el._sw) return; el._sw=true;
+    const kind=el.getAttribute('data-swkind');
+    const a=el.getAttribute('data-swa')||'';
+    const b=el.getAttribute('data-swb')||'';
+    const wrap=document.createElement('div'); wrap.className='swipe';
+    const del=document.createElement('div'); del.className='swipe-del';
+    del.innerHTML=`<button class="swipe-del-btn" onclick="event.stopPropagation();swipeDelete('${kind}','${a}','${b}')">删除</button>`;
+    const fore=document.createElement('div'); fore.className='swipe-fore';
+    el.parentNode.insertBefore(wrap, el);
+    fore.appendChild(el);
+    wrap.appendChild(del); wrap.appendChild(fore);
+    let sx=0,sy=0,dx=0,dy=0,drag=false,open=false,sw=false; const delW=76;
+    fore.addEventListener('pointerdown',e=>{ if(e.target.closest('button')||e.target.closest('select')||e.target.closest('input')||e.target.closest('textarea')) return; sx=e.clientX; sy=e.clientY; dx=0; dy=0; drag=false; sw=false; try{fore.setPointerCapture(e.pointerId);}catch(_){} });
+    fore.addEventListener('pointermove',e=>{ if(sx===0&&sy===0) return; dx=e.clientX-sx; dy=e.clientY-sy; if(!drag && Math.abs(dx)>8 && Math.abs(dx)>Math.abs(dy)) drag=true; if(drag){ let t=open?(delW+dx):dx; if(t<0)t=0; if(t>delW)t=delW; fore.style.transition='none'; fore.style.transform='translateX('+t+'px)'; } });
+    fore.addEventListener('pointerup',e=>{ if(drag){ let t=open?(delW+dx):dx; if((!open&&dx>delW*0.35)||(open&&dx<-delW*0.35)) open=!open; fore.style.transition='transform .2s'; fore.style.transform=open?('translateX('+delW+'px)'):'translateX(0)'; sw=true; setTimeout(()=>sw=false,60); } else if(open){ open=false; fore.style.transition='transform .2s'; fore.style.transform='translateX(0)'; sw=true; setTimeout(()=>sw=false,60); } sx=0; sy=0; });
+    fore.addEventListener('click',e=>{ if(sw){ e.stopPropagation(); e.preventDefault(); } }, true);
+  });
+}
+function swipeDelete(kind,a,b){
+  if(kind==='phrase') delPhrase(a,b);
+  else if(kind==='matcat') delMatCat(a);
+  else if(kind==='matsub') delMatSub(a,b);
+  else if(kind==='matnote'){ const p=b.split('|'); delMatNoteAndClose(a,p[0],p[1]); }
+  else if(kind==='archive') delArchiveItemAndClose(a,b);
+  else if(kind==='nb') nbSwipeDelete(a);
+  else if(kind==='nav') delNav(a);
+  else if(kind==='char') delChar(a);
+  else if(kind==='tl') delTl(a,b);
+  else if(kind==='rel') delRel(a,b);
+}
+function nbSwipeDelete(id){
+  const book=NB; if(!book) return;
+  const items=book.items(); const it=items.find(x=>x.id===id);
+  confirmDel('删除这条内容？若是文件夹，其中内容会一并删除。',()=>{
+    if(it && it.type==='folder'){ book.set(items.filter(x=>x.id!==id && x.parentId!==id)); }
+    else { book.set(items.filter(x=>x.id!==id)); }
+    book.save(); render();
+  });
+}
+/* ================= 导出：图片 / 文件 ================= */
+function downloadUrl(url,name){ const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); }
+function downloadText(text,name){ const blob=new Blob([text],{type:'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob); downloadUrl(url,name); setTimeout(()=>URL.revokeObjectURL(url),1500); }
+function exportImage(title,body,style){
+  style=style||{}; const family=style.fontFamily||''; const size=Number(style.fontSize||16); const color=style.color||'#2f3e4d'; const weight=style.fontWeight||'normal';
+  const pad=44, maxW=720, cv=document.createElement('canvas'), ctx=cv.getContext('2d');
+  const fontStr=weight+' '+size+'px '+(family||'serif');
+  ctx.font=fontStr;
+  const lines=[]; (body||' ').split('\n').forEach(p=>{ let cur=''; for(const ch of p){ const test=cur+ch; if(ctx.measureText(test).width>maxW-pad*2 && cur){ lines.push(cur); cur=ch; } else cur=test; } lines.push(cur); });
+  const lineH=Math.round(size*1.95); const titleH=title?Math.round(size*1.7)+16:0; const totalH=pad*2+titleH+lines.length*lineH+24;
+  cv.width=maxW; cv.height=totalH;
+  ctx.fillStyle='#f5f9fb'; ctx.fillRect(0,0,maxW,totalH);
+  ctx.fillStyle=color; ctx.textBaseline='top'; let y=pad;
+  if(title){ ctx.font='bold '+Math.round(size*1.5)+'px '+(family||'serif'); ctx.fillText(title,pad,y); y+=titleH; ctx.font=fontStr; }
+  for(const ln of lines){ ctx.fillText(ln,pad,y); y+=lineH; }
+  downloadUrl(cv.toDataURL('image/png'), (title||'无明')+'.png');
+}
+function exportCurrentImage(){
+  const title=document.getElementById('editorTitle')?document.getElementById('editorTitle').value.trim():'';
+  const body=document.getElementById('editorBody').value;
+  const style={ fontFamily:document.getElementById('editorFont').value, fontSize:Number(document.getElementById('editorSize').value), color:document.getElementById('editorColor').value, fontWeight:document.getElementById('editorWeight').value };
+  exportImage(title,body,style); toast('已导出图片');
+}
+function exportCurrentFile(){
+  const title=document.getElementById('editorTitle')?document.getElementById('editorTitle').value.trim():'';
+  const body=document.getElementById('editorBody').value;
+  downloadText((title?title+'\n\n':'')+body, (title||'无明')+'.txt'); toast('已导出文件');
 }
 /* 回车快捷收录（词句页） */
 document.addEventListener('keydown',e=>{
