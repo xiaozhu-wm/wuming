@@ -1039,14 +1039,29 @@ function openPhraseInput(){
 function addPhrase(){
   const el=document.getElementById('phIn');
   if(!el) return;
-  const text=el.value.trim(); if(!text) return;
   const tab=route.tab||'word';
-  const cat=classify(text);
-  (tab==='word'?D.words:D.sentences).push({id:uid(),text,cat,tag:'',ts:Date.now()});
+  // 一次可录入多条：按换行拆分；词汇模式或较短内容再按顿号/逗号/分号拆成独立词条
+  const lines=el.value.replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
+  const items=[];
+  lines.forEach(line=>{
+    if(tab==='word' || line.length<=20){
+      line.split(/[、，；;,]/).map(x=>x.trim()).filter(Boolean).forEach(p=>items.push(p));
+    } else {
+      items.push(line);
+    }
+  });
+  const seen=new Set(); let added=0;
+  items.forEach(text=>{
+    if(!text || seen.has(text)) return; seen.add(text);
+    const cat=classify(text);
+    (tab==='word'?D.words:D.sentences).push({id:uid(),text,cat,tag:'',ts:Date.now()});
+    added++;
+  });
+  if(!added){ toast('没有可收录的内容'); return; }
   save(); render();
   const open=document.getElementById('mask').classList.contains('show');
   if(open){ el.value=''; setTimeout(()=>el.focus(),0); }
-  toast(`已自动归入「${cat}」`);
+  toast(`已收录 ${added} 条，已分别归入对应分类`);
 }
 function delPhrase(tab,id){
   confirmDel('删除这条内容？',()=>{
