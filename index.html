@@ -533,21 +533,29 @@ function load(){
       if(typeof n.content==='string' && n.content){ n.items.push({id:uid(),type:'entry',title:n.name||'素材',body:n.content,parentId:null,style:{},bg:'',bgPos:'center',ts:Date.now()}); n.content=''; }
       n.items.forEach(it=>{ if(!it.style) it.style={}; if(it.bg===undefined) it.bg=''; if(it.bgPos===undefined) it.bgPos='center'; });
     });
-    (merged.characters||[]).forEach(ch=>{
+    (merged.characters||[]).forEach(ch=>{ try{
+      // 兼容旧版结构：archive 可能是 字符串 / 数组 / {items:[...]}，统一转成 {items:[]}
       if(typeof ch.archive==='string') ch.archive={items:[{id:uid(),type:'entry',title:'旧存档',body:ch.archive||'',parentId:null,style:{},bg:'',bgPos:'center',ts:Date.now()}]};
+      else if(Array.isArray(ch.archive)) ch.archive={items:ch.archive};
       else if(!ch.archive || !ch.archive.items) ch.archive={items:[]};
       if(!ch.modules) ch.modules=[];
       ch.modules.forEach(m=>{
         if(!m.items) m.items=[];
         if(typeof m.content==='string' && m.content){ m.items.push({id:uid(),type:'entry',title:m.name||'素材',body:m.content,parentId:null,style:{},bg:'',bgPos:'center',ts:Date.now()}); m.content=''; }
-        m.items.forEach(it=>{ if(!it.style) it.style={}; if(it.bg===undefined) it.bg=''; if(it.bgPos===undefined) it.bgPos='center'; });
+        m.items.forEach(it=>{ if(!it.style) it.style={}; if(it.bg===undefined) it.bg=''; if(it.bgPos===undefined) it.bgPos='center'; if(it.parentId===undefined) it.parentId=null; });
       });
       if(!ch.personaStyle) ch.personaStyle={};
       if(ch.personaBg===undefined) ch.personaBg='';
       if(ch.personaBgPos===undefined) ch.personaBgPos='center';
-      (ch.archive.items||[]).forEach(it=>{ if(!it.style) it.style={}; if(it.bg===undefined) it.bg=''; if(it.bgPos===undefined) it.bgPos='center'; });
-    });
-    return merged; } }catch(e){}
+      (ch.archive.items||[]).forEach(it=>{
+        if(typeof it==='string') it={id:uid(),type:'entry',title:it,body:it,parentId:null,style:{},bg:'',bgPos:'center',ts:Date.now()};
+        if(!it.style) it.style={};
+        if(it.bg===undefined) it.bg='';
+        if(it.bgPos===undefined) it.bgPos='center';
+        if(it.parentId===undefined) it.parentId=null;
+      });
+    }catch(err){ /* 单个角色结构异常时跳过，避免拖垮整体加载导致全部数据丢失 */ } });
+    return merged; } }catch(e){ console.warn('load migrate error:',e); return merged; }
   return defaultData();
 }
 let saveTimer=null;

@@ -1,5 +1,5 @@
 // 无明 · 离线缓存（网络优先，离线回退到缓存）
-const CACHE = 'wuming-v1';
+const CACHE = 'wuming-v2';
 const ASSETS = [
   './',
   './index.html',
